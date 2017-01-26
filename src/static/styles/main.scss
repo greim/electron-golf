@@ -1,0 +1,27 @@
+//$icon-font-path: '~bootstrap-sass/assets/fonts/bootstrap/';
+//@import '~bootstrap-sass/assets/stylesheets/bootstrap/_mixins.scss';
+//@import '~bootstrap-sass/assets/stylesheets/_bootstrap.scss';
+//@import '../font-awesome-4.7.0/scss/font-awesome.scss';
+
+// can add Boostrap overrides, additional Sass/CSS below...
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: sans-serif;
+  font-weight: 100;
+  background: #444;
+  color: #fff;
+  line-height: 1.4;
+}
+
+circle.ball {
+  fill: #000;
+  stroke: #fff;
+  stroke-width: 2px;
+}
+
+line.barrier {
+  stroke: #fff;
+  stroke-width: 4px;
+}
