@@ -1,7 +1,7 @@
 {
     "version": "1.0.0",
-    "summary": "game",
-    "repository": "https://github.com/greim/gc-visualizer.git",
+    "summary": "golf",
+    "repository": "https://github.com/greim/golf.git",
     "license": "NO LICENSE",
     "source-directories": [
         "src/elm"

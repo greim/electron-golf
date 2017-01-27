@@ -1,3 +1,3 @@
-# GC Visualizer
+# Golf
 
 Readme info TBD.
