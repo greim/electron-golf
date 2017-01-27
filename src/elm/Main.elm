@@ -9,15 +9,16 @@ import Task
 import Process
 import Time exposing (Time)
 import Keyboard
-import Ball exposing (Ball)
-import Barrier exposing (..)
+import AnimationFrame
+import BoxesAndBubbles.Bodies as Bodies
+import BoxesAndBubbles as BnB
 
 
 --import Set exposing (Set)
 --import V
 --import History exposing (History)
 --import Dom
---import Debug exposing (log)
+import Debug exposing (log)
 
 main =
   Html.program
@@ -33,17 +34,35 @@ main =
 
 type alias Model =
   { viewport : Window.Size
-  , ball : Ball
+  , gun : Gun
+  , isShift : Bool
+  , ball : Maybe Ball
+  , bounds : List Barrier
   , barriers : List Barrier
+  }
+
+type alias Ball =
+  Bodies.Body ()
+
+type alias Barrier =
+  Bodies.Body ()
+
+type alias Gun =
+  { pos : (Float, Float)
+  , angle : Float
+  , power : Float
   }
 
 init : (Model, Cmd Msg)
 init =
   let
     viewport = Window.Size 0 0
-    ball = Ball.new 100 100 50 20 20
+    gun = Gun (100, 100) 0 0
+    isShift = False
+    ball = Nothing
+    bounds = BnB.bounds (0, 0) 10 0.99 (0, 0) ()
     barriers = []
-    model = Model viewport ball barriers
+    model = Model viewport gun isShift ball bounds barriers
     cmd = Task.perform Resize Window.size
   in
     (model, cmd)
@@ -57,6 +76,7 @@ type Msg
   = NoOp
   | Resize Window.Size
   | KeyDown Keyboard.KeyCode
+  | KeyUp Keyboard.KeyCode
   | Frame Time
 
 update : Msg -> Model -> (Model, Cmd Msg)
@@ -66,30 +86,103 @@ update msg model =
     NoOp ->
       (model, Cmd.none)
 
-    Resize viewport ->
+    Resize newViewport ->
       let
-        newBarriers =
-          [ Barrier.Vertical 0 0 (toFloat viewport.height)
-          , Barrier.Vertical (toFloat viewport.width) 0 (toFloat viewport.height)
-          , Barrier.Horizontal 0 0 (toFloat viewport.width)
-          , Barrier.Horizontal 0 (toFloat viewport.height) (toFloat viewport.width)
-          ]
-        newModel = { model | viewport = viewport, barriers = newBarriers }
+        w = toFloat newViewport.width
+        h = toFloat newViewport.height
+        cx = w / 2
+        cy = h / 2
+        newBounds = BnB.bounds (w, h) 1 0.99 (cx, cy) ()
+        newModel = { model | viewport = newViewport, bounds = newBounds }
       in
         (newModel, Cmd.none)
 
     KeyDown keyCode ->
-      (model, Cmd.none) -- if keyCode == 27... etc
+      --let
+      --  sdf = log "keyCode" keyCode
+      --in
+        case keyCode of
+          37 -> -- right arrow
+            let
+              gun = model.gun
+              incr = if model.isShift then 0.02 else 1.0
+              newAngle = gun.angle - incr
+              newGun = { gun | angle = newAngle }
+              newModel = { model | gun = newGun }
+            in
+              (newModel, Cmd.none)
+          39 -> -- left arrow
+            let
+              gun = model.gun
+              incr = if model.isShift then 0.02 else 1.0
+              newAngle = gun.angle + incr
+              newGun = { gun | angle = newAngle }
+              newModel = { model | gun = newGun }
+            in
+              (newModel, Cmd.none)
+          16 -> -- shift key
+            let newModel = { model | isShift = True }
+            in (newModel, Cmd.none)
+          32 -> -- space bar
+            let
+              gun = model.gun
+              incr = if model.isShift then 0.2 else 2
+              newPower = gun.power + incr
+              newGun = { gun | power = newPower }
+              newModel = { model | gun = newGun }
+            in
+              (newModel, Cmd.none)
+          _ ->
+            (model, Cmd.none)
+
+    KeyUp keyCode ->
+      case keyCode of
+        16 -> -- shift key
+          let newModel = { model | isShift = False }
+          in (newModel, Cmd.none)
+        32 -> -- space bar
+          let
+            gun = model.gun
+            velX = (cos ((gun.angle / 360) * pi * 2)) * (gun.power / 5)
+            velY = (sin ((gun.angle / 360) * pi * 2)) * (gun.power / 5)
+            newBall = Just (BnB.bubble 30 1.0 1.0 model.gun.pos (velX, velY) ())
+            newGun = { gun | power = 0 }
+            newModel = { model | gun = newGun, ball = newBall }
+          in
+            (newModel, Cmd.none)
+        _ ->
+          (model, Cmd.none)
 
     Frame time ->
-      let
-        hasCollided = Ball.intersectsWithAny model.barriers model.ball
-        oldBall = model.ball
-        newBall = if hasCollided then { oldBall | velX = 0, velY = 0 } else Ball.next model.ball
-        newModel = { model | ball = newBall }
-      in
-        (newModel, Cmd.none)
+      case model.ball of
+        Just ball ->
+          let
+            newVelocity = reduceVelocity ball.velocity
+            slowerBall = { ball | velocity = newVelocity }
+            shapes = slowerBall :: model.bounds
+            newShapes = BnB.step (0, 0) (0, 0) shapes
+            newBalls = List.filter isBubble newShapes
+            newBall = List.head newBalls
+            newModel = { model | ball = newBall }
+          in
+            (newModel, Cmd.none)
+        Nothing ->
+          (model, Cmd.none)
 
+reduceVelocity : (Float, Float) -> (Float, Float)
+reduceVelocity (xVel, yVel) =
+  let
+    hyp = sqrt (xVel * xVel + yVel * yVel)
+    factor = if hyp > 5 then 0.997 else if hyp > 0.3 then 0.994 else if hyp > 0.05 then 0.97 else 0
+  in
+    (xVel * factor, yVel * factor)
+
+
+isBubble : Bodies.Body x -> Bool
+isBubble body =
+  case body.shape of
+    Bodies.Box vec -> False
+    Bodies.Bubble rad -> True
 
 delay : Time -> msg -> Cmd msg
 delay time msg =
@@ -105,8 +198,9 @@ subscriptions : Model -> Sub Msg
 subscriptions model =
   Sub.batch
     [ Keyboard.downs KeyDown
+    , Keyboard.ups KeyUp
     , Window.resizes Resize
-    , Time.every (100 * Time.millisecond) Frame
+    , AnimationFrame.diffs Frame
     ]
 
 
@@ -120,7 +214,7 @@ view model =
     heightStr = toString model.viewport.height
     widthPx = widthStr ++ "px"
     heightPx = heightStr ++ "px"
-    box = makeViewBox 0 0 model.viewport.width model.viewport.height
+    box = drawViewBox 0 0 model.viewport.width model.viewport.height
   in
     Html.div []
       [ Svg.svg
@@ -128,46 +222,92 @@ view model =
         , SAttr.width widthPx
         , SAttr.height heightPx
         ]
-        [ ball model.ball
-        , barriers model.barriers
+        [ drawBarriers model.bounds
+        , drawBarriers model.barriers
+        , drawGun model.gun
+        , drawBall model.ball
         ]
       ]
 
-ball : Ball -> Svg Msg
-ball ball =
-  let
-    cx = toString ball.x
-    cy = toString ball.y
-    r = toString ball.radius
-    cls = SAttr.class "ball"
-  in
-    Svg.circle [cls, SAttr.cx cx, SAttr.cy cy, SAttr.r r] []
-
-barrier : Barrier -> Svg Msg
-barrier barrier =
-  case barrier of
-    Vertical x y len ->
-      let
-        x1 = SAttr.x1 (toString x)
-        y1 = SAttr.y1 (toString y)
-        x2 = SAttr.x2 (toString x)
-        y2 = SAttr.y2 (toString (y + len))
-        cls = SAttr.class "barrier"
-      in
-        Svg.line [cls, x1, y1, x2, y2] []
-    Horizontal x y len ->
-      let
-        x1 = SAttr.x1 (toString x)
-        y1 = SAttr.y1 (toString y)
-        x2 = SAttr.x2 (toString (x + len))
-        y2 = SAttr.y2 (toString y)
-      in
-        Svg.line [SAttr.class "barrier", x1, y1, x2, y2] []
-
-barriers : List Barrier -> Svg Msg
-barriers barriers =
-  Svg.g [SAttr.class "barriers"] (barriers |> List.map barrier)
-
-makeViewBox : Int -> Int -> Int -> Int -> String
-makeViewBox x y width height =
+drawViewBox : Int -> Int -> Int -> Int -> String
+drawViewBox x y width height =
   (toString x) ++ " " ++ (toString y) ++ " " ++ (toString width) ++ " " ++ (toString height)
+
+drawBall : Maybe Ball -> Svg Msg
+drawBall ball =
+  case ball of
+    Just ball ->
+      case ball.shape of
+        Bodies.Bubble radius ->
+          let
+            (cx, cy) = ball.pos
+            cxAttr = SAttr.cx (toString cx)
+            cyAttr = SAttr.cy (toString cy)
+            rAttr = SAttr.r (toString radius)
+            classAttr = SAttr.class "ball"
+          in
+            Svg.circle [cxAttr, cyAttr, rAttr, classAttr] []
+        Bodies.Box vec ->
+          Svg.g [] []
+    Nothing ->
+      Svg.g [] []
+
+drawGun : Gun -> Svg Msg
+drawGun gun =
+  let
+    (x, y) = gun.pos
+    classAttr = SAttr.class "gun"
+    transformAttr = SAttr.transform ("translate(" ++ (toString x) ++ "," ++ (toString y) ++ ") rotate(" ++ (toString gun.angle) ++ ")")
+  in
+    Svg.g
+      [ transformAttr
+      , classAttr
+      ]
+      [ Svg.rect [SAttr.x "20", SAttr.y "-10", SAttr.width "20", SAttr.height "20", SAttr.class "barrel"] []
+      , Svg.circle [SAttr.cx "0", SAttr.cy "0", SAttr.r "20"] []
+      , Svg.line [SAttr.x1 "20", SAttr.y1 "0", SAttr.x2 "2100", SAttr.y2 "0"] []
+      , drawPowerGauge gun.power
+      ]
+
+drawPowerGauge : Float -> Svg Msg
+drawPowerGauge power =
+  case power of
+    0 ->
+      Svg.g [] []
+    _ ->
+      let
+        width = power / 3
+        widthAttr = SAttr.width (toString width)
+        heightAttr = SAttr.height "12"
+        yAttr = SAttr.y "-6"
+        xAttr = SAttr.x (toString (36 - width))
+      in
+        Svg.g
+          [ SAttr.class "power-gauge"
+          ]
+          [ Svg.rect [xAttr, yAttr, widthAttr, heightAttr, SAttr.class "backdrop"] []
+          ]
+
+drawBarriers : List Barrier -> Svg Msg
+drawBarriers barriers =
+  Svg.g [] (List.map drawBarrier barriers)
+
+drawBarrier : Barrier -> Svg Msg
+drawBarrier barrier =
+  case barrier.shape of
+    Bodies.Bubble r ->
+      Svg.g [] []
+    Bodies.Box (halfWidth, halfHeight) ->
+      let
+        (cx, cy) = barrier.pos
+        x = cx - halfWidth
+        y = cy - halfHeight
+        width = halfWidth * 2
+        height = halfHeight * 2
+        xAttr = SAttr.x (toString x)
+        yAttr = SAttr.y (toString y)
+        widthAttr = SAttr.width (toString width)
+        heightAttr = SAttr.height (toString height)
+        classAttr = SAttr.class "barrier"
+      in
+        Svg.rect [xAttr, yAttr, widthAttr, heightAttr, classAttr] []
