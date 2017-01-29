@@ -86,75 +86,124 @@ type alias Level =
 levels : List Level
 levels =
   [ Level
-    (Cannon (100, 900) 300 0)
+    (Cannon (100, 900) 315 0)
     []
     (Target (450, 400, 150, 150))
     1
   , Level
-    (Cannon (900, 900) 200 0)
+    (Cannon (900, 900) 225 0)
     []
-    (Target (200, 100, 150, 150))
+    (Target (100, 100, 150, 150))
     1
   , Level
-    (Cannon (100, 100) 20 0)
-    [makeBarrier 500 50 1 600]
+    (Cannon (500, 900) 225 0)
+    []
+    (Target (425, 100, 150, 150))
+    1
+  , Level
+    (Cannon (100, 900) 270 0)
+    []
+    (Target (850, 50, 100, 100))
+    1
+  , Level
+    (Cannon (100, 100) 65 0)
+    [ makeBarrier 500 50 1 600
+    ]
     (Target (750, 100, 150, 150))
     1
   , Level
-    (Cannon (880, 400) 166.61 0)
-    [makeBarrier 50 500 370 1, makeBarrier 580 500 370 1]
+    (Cannon (880, 400) 166.56 0)
+    [ makeBarrier 50 500 370 1
+    , makeBarrier 580 500 370 1
+    ]
     (Target (800, 800, 100, 100))
     2
   , Level
-    (Cannon (880, 850) 166.62 0)
-    [makeBarrier 333 50 1 666, makeBarrier 666 333 1 618]
+    (Cannon (880, 850) 255 0)
+    [ makeBarrier 333 50 1 666
+    , makeBarrier 666 333 1 618
+    ]
     (Target (100, 150, 100, 100))
     2
   , Level
     (Cannon (500, 800) 270 0)
-    [makeBarrier 200 333 600 1, makeBarrier 200 666 600 1]
+    [ makeBarrier 200 333 600 1
+    , makeBarrier 200 666 600 1
+    ]
     (Target (450, 140, 100, 100))
     2
   , Level
     (Cannon (900, 900) 270 0)
-    [makeBarrier 840 200 1 750]
+    [ makeBarrier 840 230 1 720
+    , makeBarrier 900 170 50 1
+    ]
     (Target (690, 800, 100, 100))
     2
   , Level
     (Cannon (900, 100) 135 0)
-    [makeBarrier 200 200 600 1, makeBarrier 800 200 1 600]
+    [ makeBarrier 200 200 600 1
+    , makeBarrier 800 200 1 600
+    , makeBarrier 875 850 1 100
+    , makeBarrier 50 125 100 1
+    ]
     (Target (600, 300, 100, 100))
     2
   , Level
     (Cannon (100, 500) 0 0)
-    [makeBarrier 200 200 600 1, makeBarrier 200 800 600 1, makeBarrier 200 200 1 600, makeBarrier 800 200 1 230, makeBarrier 800 570 1 230]
+    [ makeBarrier 200 200 600 1
+    , makeBarrier 200 800 600 1
+    , makeBarrier 200 200 1 600
+    , makeBarrier 800 200 1 230
+    , makeBarrier 800 570 1 230
+    ]
     (Target (450, 450, 100, 100))
     3
   , Level
     (Cannon (500, 500) 135 0)
-    [makeBarrier 200 200 600 1, makeBarrier 50 800 750 1, makeBarrier 800 200 1 600, makeBarrier 200 200 1 200]
+    [ makeBarrier 200 200 600 1
+    , makeBarrier 50 800 750 1
+    , makeBarrier 800 200 1 600
+    , makeBarrier 200 200 1 200
+    ]
     (Target (75, 825, 100, 100))
     3
   , Level
     (Cannon (500, 100) 90 0)
-    [makeBarrier 50 250 375 1, makeBarrier 575 250 375 1, makeBarrier 150 500 700 1, makeBarrier 50 750 375 1, makeBarrier 575 750 375 1]
+    [ makeBarrier 50 250 375 1
+    , makeBarrier 575 250 375 1
+    , makeBarrier 150 500 700 1
+    , makeBarrier 50 750 375 1
+    , makeBarrier 575 750 375 1
+    ]
     (Target (800, 800, 100, 100))
     3
   , Level
-    (Cannon (500, 100) 90 0)
-    [makeBallBarrier 500 500 210, makeBallBarrier 250 250 100, makeBallBarrier 250 750 100, makeBallBarrier 750 250 100, makeBallBarrier 750 750 100]
-    (Target (450, 800, 100, 100))
+    (Cannon (100, 500) 0 0)
+    [ makeBallBarrier 500 500 210
+    , makeBallBarrier 250 250 100
+    , makeBallBarrier 250 750 100
+    , makeBallBarrier 750 250 100
+    , makeBallBarrier 750 750 100
+    ]
+    (Target (800, 450, 100, 100))
     3
   , Level
     (Cannon (170, 170) 45 0)
-    [makeBallBarrier 500 500 400]
+    [ makeBallBarrier 500 500 400
+    ]
     (Target (800, 800, 100, 100))
     3
   , Level
-    (Cannon (100, 100) 20 0)
-    []
-    (Target (500, 500, 150, 100))
-    1
+    (Cannon (150, 150) 0 0)
+    [ makeBarrier 500 500 450 1
+    , makeBarrier 50 300 450 1
+    , makeBarrier 50 700 450 1
+    , makeBallBarrier 250 500 125
+    , makeBallBarrier 750 275 125
+    , makeBallBarrier 750 725 125
+    ]
+    (Target (100, 800, 100, 100))
+    2
   , Level
     (Cannon (100, 100) 20 0)
     []
@@ -203,17 +252,23 @@ init =
     playport = Window.Size 0 0
     controlport = Window.Size 0 0
 
-    level = Level
-      (Cannon (100, 100) 45 0)
-      []
-      (Target (200, 200, 150, 150))
-      1
-
     --level = Level
-    --  (Cannon (170, 170) 45 0)
-    --  [makeBallBarrier 500 500 400]
-    --  (Target (800, 800, 100, 100))
-    --  3
+    --  (Cannon (100, 100) 45 0)
+    --  []
+    --  (Target (200, 200, 150, 150))
+    --  1
+
+    level = Level
+      (Cannon (150, 150) 0 0)
+      [ makeBarrier 500 500 450 1
+      , makeBarrier 50 300 450 1
+      , makeBarrier 50 700 450 1
+      , makeBallBarrier 250 500 125
+      , makeBallBarrier 750 275 125
+      , makeBallBarrier 750 725 125
+      ]
+      (Target (100, 800, 100, 100))
+      2
 
     keysPressed = KeysPressed Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
     ball = Nothing
@@ -750,6 +805,9 @@ drawCannon cannon =
     (x, y) = cannon.pos
     classAttr = SAttr.class "cannon"
     transformAttr = SAttr.transform ("translate(" ++ (toString x) ++ "," ++ (toString y) ++ ") rotate(" ++ (toString cannon.angle) ++ ")")
+    powerRadius = (cannon.power * 2.55) ^ 1.2
+    powerOpacity = min 1.0 (1.0 - (powerRadius / 700))
+    opacityStyle = "opacity:" ++ (toString powerOpacity)
   in
     Svg.g
       [ transformAttr
@@ -758,6 +816,7 @@ drawCannon cannon =
       [ Svg.rect [SAttr.x "20", SAttr.y "-10", SAttr.width "20", SAttr.height "20", SAttr.class "barrel"] []
       , Svg.circle [SAttr.cx "0", SAttr.cy "0", SAttr.r "20"] []
       , Svg.line [SAttr.x1 "20", SAttr.y1 "0", SAttr.x2 "2100", SAttr.y2 "0"] []
+      , Svg.circle [attrCX 0, attrCY 0, attrR powerRadius, attrClass "power-radius", SAttr.style opacityStyle] []
       , drawPowerGauge cannon.power
       ]
 
@@ -832,3 +891,9 @@ attrX2 x2 = SAttr.x2 (toString x2)
 
 attrY2 : Float -> Svg.Attribute Msg
 attrY2 y2 = SAttr.y2 (toString y2)
+
+attrR : Float -> Svg.Attribute Msg
+attrR r = SAttr.r (toString r)
+
+attrClass : String -> Svg.Attribute Msg
+attrClass cls = SAttr.class cls
