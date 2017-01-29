@@ -50,11 +50,13 @@ type alias Target =
   { pos : (Float, Float, Float, Float)
   }
 
+type PhysObj = BallObj | BarrierObj
+
 type alias Ball =
-  Bodies.Body ()
+  Bodies.Body PhysObj
 
 type alias Barrier =
-  Bodies.Body ()
+  Bodies.Body PhysObj
 
 type alias Cannon =
   { pos : (Float, Float)
@@ -139,15 +141,15 @@ levels =
     (Target (800, 800, 100, 100))
     3
   , Level
-    (Cannon (100, 100) 20 0)
-    []
-    (Target (500, 500, 150, 100))
-    1
+    (Cannon (500, 100) 90 0)
+    [makeBallBarrier 500 500 210, makeBallBarrier 250 250 100, makeBallBarrier 250 750 100, makeBallBarrier 750 250 100, makeBallBarrier 750 750 100]
+    (Target (450, 800, 100, 100))
+    3
   , Level
-    (Cannon (100, 100) 20 0)
-    []
-    (Target (500, 500, 150, 100))
-    1
+    (Cannon (170, 170) 45 0)
+    [makeBallBarrier 500 500 400]
+    (Target (800, 800, 100, 100))
+    3
   , Level
     (Cannon (100, 100) 20 0)
     []
@@ -179,9 +181,20 @@ makeBarrier x y w h =
     density = inf
     restitution = 1.0
     velocity = (0, 0)
-    meta = ()
+    meta = BarrierObj
   in
     BnB.box (w, h) density restitution (cx, cy) velocity meta
+
+makeBallBarrier : Float -> Float -> Float -> Barrier
+makeBallBarrier cx cy r =
+  let
+    inf = 1.0 / 0.0
+    density = inf
+    restitution = 1.0
+    velocity = (0, 0)
+    meta = BarrierObj
+  in
+    BnB.bubble r density restitution (cx, cy) velocity meta
 
 init : (Model, Cmd Msg)
 init =
@@ -190,21 +203,27 @@ init =
     playport = Window.Size 0 0
     controlport = Window.Size 0 0
 
-    --level = Level
-    --  (Cannon (100, 100) 45 0)
-    --  []
-    --  (Target (200, 200, 150, 150))
-    --  1
-
     level = Level
-      (Cannon (500, 100) 90 0)
-      [makeBarrier 50 250 375 1, makeBarrier 575 250 375 1, makeBarrier 150 500 700 1, makeBarrier 50 750 375 1, makeBarrier 575 750 375 1]
-      (Target (800, 800, 100, 100))
-      3
+      (Cannon (100, 100) 45 0)
+      []
+      (Target (200, 200, 150, 150))
+      1
+
+    --level = Level
+    --  (Cannon (170, 170) 45 0)
+    --  [makeBallBarrier 500 500 400]
+    --  (Target (800, 800, 100, 100))
+    --  3
 
     keysPressed = KeysPressed Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
     ball = Nothing
-    bounds = BnB.bounds (900, 900) 1 1.0 ( 500, 500 ) ()
+    --bounds = BnB.bounds (900, 900) 1000 1.0 ( 500, 500 ) BarrierObj
+    bounds =
+      [ makeBarrier -500 -450 2000 500
+      , makeBarrier -450 -500 500 2000
+      , makeBarrier -500 950 2000 500
+      , makeBarrier 950 -500 500 2000
+      ]
     time = 0
     shotCount = 0
     totalShotCount = 0
@@ -277,7 +296,7 @@ update msg model =
               restitution = 1.0
               pos = cannon.pos
               velocity = (velX, velY)
-              meta = ()
+              meta = BallObj
               newBall = Just (BnB.bubble radius density restitution pos velocity meta)
               newCannon = { cannon | power = 0 }
               newLevel = { level | cannon = newCannon }
@@ -363,7 +382,12 @@ evaluatePlay2 hasStopped model =
           newBall = Nothing
           level = model.level
           cannon = level.cannon
-          newCannon = { cannon | pos = ball.pos }
+          (x1, y1) = ball.pos
+          (tx, ty, tw, th) = level.target.pos
+          x2 = tx + (tw / 2)
+          y2 = ty + (th / 2)
+          angle = (atan2 (y2 - y1) (x2 - x1)) * (360 / (pi * 2))
+          newCannon = { cannon | pos = ball.pos, angle = angle }
           newLevel = { level | cannon = newCannon }
           newShotCount = model.shotCount + 1
           newTotalShotCount = model.totalShotCount + 1
@@ -405,7 +429,7 @@ advanceBall hasStopped model =
           slowerBall = { ball | velocity = newVelocity }
           shapes = (slowerBall :: model.bounds) ++ model.level.barriers
           newShapes = BnB.step (0, 0) (0, 0) shapes
-          newBall = findFirst isBubble newShapes
+          newBall = findFirst isBall newShapes
         in
           { model | ball = newBall }
       Nothing ->
@@ -482,11 +506,11 @@ reduceVelocity (xVel, yVel) =
   in
     (newXVel, newYVel)
 
-isBubble : Bodies.Body x -> Bool
-isBubble body =
-  case body.shape of
-    Bodies.Box vec -> False
-    Bodies.Bubble rad -> True
+isBall : Bodies.Body PhysObj -> Bool
+isBall body =
+  case body.meta of
+    BallObj -> True
+    BarrierObj -> False
 
 delay : Time -> msg -> Cmd msg
 delay time msg =
@@ -572,7 +596,7 @@ view model =
         , SAttr.height heightPx
         ]
         [ defs
-        , drawBarriers model.bounds
+        , Svg.rect [attrX 50, attrY 50, attrWidth 900, attrHeight 900, SAttr.class "boundary"] []
         , drawBarriers model.level.barriers
         , drawTarget model.level.target
         , drawCannon model.level.cannon
@@ -759,7 +783,11 @@ drawBarrier : Barrier -> Svg Msg
 drawBarrier barrier =
   case barrier.shape of
     Bodies.Bubble r ->
-      Svg.g [] []
+      let
+        (cx, cy) = barrier.pos
+        classAttr = SAttr.class "barrier"
+      in
+        Svg.circle [attrCX cx, attrCY cy, SAttr.r (toString r), classAttr] []
     Bodies.Box (halfWidth, halfHeight) ->
       let
         (cx, cy) = barrier.pos
