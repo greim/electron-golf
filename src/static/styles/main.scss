@@ -8,22 +8,82 @@
 body {
   margin: 0;
   padding: 0;
-  font-family: sans-serif;
+  font-family: Poppins, sans-serif;
   font-weight: 100;
   background: #333;
-  color: #fff;
+  color: #000;
   line-height: 1.4;
+}
+
+#controls {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  color: #999;
+  box-sizing: border-box;
+  padding: 35px 50px 35px 0;
+  line-height: 1.7;
+  font-size: 14px;
+  font-weight: 100;
+  background: #222;
+  border-right: 1px solid #111;
+  h1,h2,h3,h4,h5,h6 {
+    color: #fff;
+    font-weight: inherit;
+    line-height: 1.2;
+  }
+  h1,h2,h3,h4,h5,h6,p,ul,ol,dl,pre,blockquote {
+    margin: 10px 0;
+  }
+  strong {
+    font-weight: inherit;
+    color: #fff;
+  }
+  .tiles {
+    display: flex;
+    margin: 20px -8px;
+    .tile {
+      text-align: center;
+      line-height: 1.2;
+      flex-grow: 1;
+      flex-basis: auto;
+      width: 33.33333%;
+      flex-shrink: 1;
+      box-sizing: border-box;
+      padding: 10px 12px;
+      background: rgba(0,0,0,0.25);
+      border: 1px solid #333;
+      margin: 0 5px;
+      border-radius: 5px;
+      color: #ccc;
+      text-shadow: 0 0 3px rgba(255,255,255,0.5);
+      box-shadow: 1px 2px 8px rgba(0,0,0,0.5) inset;
+      .tile-label {
+        font-size: 12px;
+        opacity: .35;
+      }
+      .tile-value {
+        position: relative;
+        top: 5px;
+        font-size: 30px;
+        text-shadow: 1px 2px 8px #000;
+        font-weight: bold;
+      }
+    }
+  }
 }
 
 svg {
   position: fixed;
+  background: #222;
   top: 0;
   left: 0;
 }
 
 rect.barrier {
   stroke: #fff;
-  stroke-width: 4px;
+  stroke-width: 1px;
 }
 
 .cannon {
@@ -45,7 +105,34 @@ rect.barrier {
     rect {
       fill: #0f0;
       stroke: #333;
-      stroke-width: 4px;
+      stroke-width: 6px;
+      stroke-linejoin: round;
+    }
+    .gauge-dot {
+      fill: #0f0;
+      stroke: #333;
+      stroke-width: 5px;
+    }
+  }
+}
+
+.target {
+  line.target-bound {
+    stroke: #fff;
+    stroke-width: 1px;
+    opacity: .25;
+  }
+  path.target-corner {
+    stroke: #fff;
+    stroke-width: 4px;
+    stroke-linejoin: round;
+  }
+  &.goal {
+    line.target-bound {
+      stroke: #0f0;
+    }
+    path.target-corner {
+      stroke: #0f0;
     }
   }
 }
@@ -53,5 +140,5 @@ rect.barrier {
 circle.ball {
   stroke: #fff;
   stroke-width: 2px;
-  fill: rgba(50,50,50,0.75);
+  fill: rgba(255,255,255,0.1);
 }
