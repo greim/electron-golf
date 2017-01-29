@@ -203,7 +203,7 @@ levels =
     , makeBallBarrier 750 725 125
     ]
     (Target (100, 800, 100, 100))
-    2
+    3
   , Level
     (Cannon (500, 900) 270 0)
     [ makeBouncyBarrier 162.5 450 111 0.1
