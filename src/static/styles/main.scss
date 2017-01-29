@@ -43,6 +43,9 @@ body {
   .tiles {
     display: flex;
     margin: 20px -8px;
+    & + .tiles {
+      margin-top: -9px;
+    }
     .tile {
       text-align: center;
       line-height: 1.2;
@@ -69,6 +72,11 @@ body {
         font-size: 30px;
         text-shadow: 1px 2px 8px #000;
         font-weight: bold;
+        .slash {
+          font-weight: normal;
+          margin: 0 4px;
+          opacity: .25;
+        }
       }
     }
   }
@@ -81,8 +89,22 @@ svg {
   left: 0;
 }
 
+rect.block {
+  fill: #222;
+  opacity: .9;
+}
+
+text.par-label {
+  text-anchor: end;
+  fill: #fff;
+  font-size: 20px;
+  font-weight: normal;
+  opacity: .2;
+}
+
 rect.barrier {
-  stroke: #fff;
+  fill: rgba(255,255,255,0.025);
+  stroke: #f90;
   stroke-width: 1px;
 }
 

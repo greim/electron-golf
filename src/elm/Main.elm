@@ -1,5 +1,6 @@
 import Html exposing (Html)
 import Html.Attributes as HAttr
+import Html.Events as HEv
 import Svg exposing (Svg)
 import Svg.Attributes as SAttr
 import Window
@@ -10,7 +11,6 @@ import Keyboard
 import AnimationFrame
 import BoxesAndBubbles.Bodies as Bodies
 import BoxesAndBubbles as BnB
---import Html.Events as HEv
 --import Json.Decode as Json
 --import Set exposing (Set)
 --import V
@@ -35,12 +35,10 @@ type alias Model =
   { viewport : Window.Size
   , playport : Window.Size
   , controlport : Window.Size
-  , cannon : Cannon
+  , level : Level
   , keysPressed : KeysPressed
   , ball : Maybe Ball
   , bounds : List Barrier
-  , barriers : List Barrier
-  , target : Target
   , time : Time
   , shotCount : Int
   , totalShotCount : Int
@@ -77,81 +75,100 @@ type alias KeysPressed =
   }
 
 type alias Level =
-  (Cannon, List Barrier, Target)
+  { cannon : Cannon
+  , barriers : List Barrier
+  , target : Target
+  , par : Int
+  }
 
 levels : List Level
 levels =
-  [(
-    ( Cannon (100, 900) 280 0 ),
-    ( [] ),
-    ( Target (450, 400, 150, 150) )
-  ), (
-    ( Cannon (900, 900) 200 0 ),
-    ( [] ),
-    ( Target (200, 100, 150, 150) )
-  ), (
-    ( Cannon (100, 100) 20 0 ),
-    ( [makeBarrier 500 50 1 600] ),
-    ( Target (750, 100, 150, 150) )
-  ), (
-    ( Cannon (880, 400) 166.62 0 ),
-    ( [makeBarrier 50 500 370 1, makeBarrier 580 500 370 1] ),
-    ( Target (750, 750, 150, 150) )
-  ), (
-    ( Cannon (880, 400) 166.62 0 ),
-    ( [makeBarrier 50 500 360 1, makeBarrier 590 500 360 1] ),
-    ( Target (100, 750, 100, 100) )
-  ), (
-    ( Cannon (880, 850) 166.62 0 ),
-    ( [makeBarrier 333 50 1 666, makeBarrier 666 333 1 618] ),
-    ( Target (100, 150, 100, 100) )
-  ), (
-
-
-    ( Cannon (100, 100) 20 0 ),
-    ( [] ),
-    ( Target (500, 500, 150, 100) )
-  ), (
-    ( Cannon (100, 100) 20 0 ),
-    ( [] ),
-    ( Target (500, 500, 150, 100) )
-  ), (
-    ( Cannon (100, 100) 20 0 ),
-    ( [] ),
-    ( Target (500, 500, 150, 100) )
-  ), (
-    ( Cannon (100, 100) 20 0 ),
-    ( [] ),
-    ( Target (500, 500, 150, 100) )
-  ), (
-    ( Cannon (100, 100) 20 0 ),
-    ( [] ),
-    ( Target (500, 500, 150, 100) )
-  ), (
-    ( Cannon (100, 100) 20 0 ),
-    ( [] ),
-    ( Target (500, 500, 150, 100) )
-  ), (
-    ( Cannon (100, 100) 20 0 ),
-    ( [] ),
-    ( Target (500, 500, 150, 100) )
-  ), (
-    ( Cannon (100, 100) 20 0 ),
-    ( [] ),
-    ( Target (500, 500, 150, 100) )
-  ), (
-    ( Cannon (100, 100) 20 0 ),
-    ( [] ),
-    ( Target (500, 500, 150, 100) )
-  ), (
-    ( Cannon (100, 100) 20 0 ),
-    ( [] ),
-    ( Target (500, 500, 150, 100) )
-  ), (
-    ( Cannon (100, 100) 20 0 ),
-    ( [] ),
-    ( Target (500, 500, 150, 100) )
-  )]
+  [ Level
+    (Cannon (100, 900) 300 0)
+    []
+    (Target (450, 400, 150, 150))
+    1
+  , Level
+    (Cannon (900, 900) 200 0)
+    []
+    (Target (200, 100, 150, 150))
+    1
+  , Level
+    (Cannon (100, 100) 20 0)
+    [makeBarrier 500 50 1 600]
+    (Target (750, 100, 150, 150))
+    1
+  , Level
+    (Cannon (880, 400) 166.61 0)
+    [makeBarrier 50 500 370 1, makeBarrier 580 500 370 1]
+    (Target (800, 800, 100, 100))
+    2
+  , Level
+    (Cannon (880, 850) 166.62 0)
+    [makeBarrier 333 50 1 666, makeBarrier 666 333 1 618]
+    (Target (100, 150, 100, 100))
+    2
+  , Level
+    (Cannon (500, 800) 270 0)
+    [makeBarrier 200 333 600 1, makeBarrier 200 666 600 1]
+    (Target (450, 140, 100, 100))
+    2
+  , Level
+    (Cannon (900, 900) 270 0)
+    [makeBarrier 840 200 1 750]
+    (Target (690, 800, 100, 100))
+    2
+  , Level
+    (Cannon (900, 100) 135 0)
+    [makeBarrier 200 200 600 1, makeBarrier 800 200 1 600]
+    (Target (600, 300, 100, 100))
+    2
+  , Level
+    (Cannon (100, 500) 0 0)
+    [makeBarrier 200 200 600 1, makeBarrier 200 800 600 1, makeBarrier 200 200 1 600, makeBarrier 800 200 1 230, makeBarrier 800 570 1 230]
+    (Target (450, 450, 100, 100))
+    3
+  , Level
+    (Cannon (500, 500) 135 0)
+    [makeBarrier 200 200 600 1, makeBarrier 50 800 750 1, makeBarrier 800 200 1 600, makeBarrier 200 200 1 200]
+    (Target (75, 825, 100, 100))
+    3
+  , Level
+    (Cannon (500, 100) 90 0)
+    [makeBarrier 50 250 375 1, makeBarrier 575 250 375 1, makeBarrier 150 500 700 1, makeBarrier 50 750 375 1, makeBarrier 575 750 375 1]
+    (Target (800, 800, 100, 100))
+    3
+  , Level
+    (Cannon (100, 100) 20 0)
+    []
+    (Target (500, 500, 150, 100))
+    1
+  , Level
+    (Cannon (100, 100) 20 0)
+    []
+    (Target (500, 500, 150, 100))
+    1
+  , Level
+    (Cannon (100, 100) 20 0)
+    []
+    (Target (500, 500, 150, 100))
+    1
+  , Level
+    (Cannon (100, 100) 20 0)
+    []
+    (Target (500, 500, 150, 100))
+    1
+  , Level
+    (Cannon (100, 100) 20 0)
+    []
+    (Target (500, 500, 150, 100))
+    1
+  , Level
+    (Cannon (100, 100) 20 0)
+    []
+    (Target (500, 500, 150, 100))
+    1
+  ]
 
 makeBarrier : Float -> Float -> Float -> Float -> Barrier
 makeBarrier x y w h =
@@ -173,13 +190,17 @@ init =
     playport = Window.Size 0 0
     controlport = Window.Size 0 0
 
-    cannon = Cannon (100, 100) 20 0
-    barriers = []
-    target = Target (200, 200, 150, 150)
+    --level = Level
+    --  (Cannon (100, 100) 45 0)
+    --  []
+    --  (Target (200, 200, 150, 150))
+    --  1
 
-    --cannon = Cannon (880, 850) 166.62 0
-    --barriers = [makeBarrier 333 50 1 666, makeBarrier 666 333 1 618]
-    --target = Target (100, 150, 100, 100)
+    level = Level
+      (Cannon (500, 100) 90 0)
+      [makeBarrier 50 250 375 1, makeBarrier 575 250 375 1, makeBarrier 150 500 700 1, makeBarrier 50 750 375 1, makeBarrier 575 750 375 1]
+      (Target (800, 800, 100, 100))
+      3
 
     keysPressed = KeysPressed Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
     ball = Nothing
@@ -189,7 +210,7 @@ init =
     totalShotCount = 0
     remainingLevels = levels
     finishedLevels = []
-    model = Model viewport playport controlport cannon keysPressed ball bounds barriers target time shotCount totalShotCount remainingLevels finishedLevels
+    model = Model viewport playport controlport level keysPressed ball bounds time shotCount totalShotCount remainingLevels finishedLevels
     cmd = Task.perform Resize Window.size
   in
     (model, cmd)
@@ -203,10 +224,22 @@ type Msg
   | KeyDown Keyboard.KeyCode
   | KeyUp Keyboard.KeyCode
   | Frame Time
+  | Skip
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
   case msg of
+
+    Skip ->
+      case model.remainingLevels of
+        newLevel :: newRemainingLevels ->
+          let
+            newFinishedLevels = model.level :: model.finishedLevels
+            newModel = { model | level = newLevel, remainingLevels = newRemainingLevels, finishedLevels = newFinishedLevels }
+          in
+            (newModel, Cmd.none)
+        [] ->
+          (model, Cmd.none)
 
     NoOp ->
       (model, Cmd.none)
@@ -235,7 +268,8 @@ update msg model =
         case keyCode of
           32 ->
             let
-              cannon = model.cannon
+              level = model.level
+              cannon = level.cannon
               velX = (cos (degrees cannon.angle)) * (cannon.power / 10)
               velY = (sin (degrees cannon.angle)) * (cannon.power / 10)
               radius = 22
@@ -246,7 +280,8 @@ update msg model =
               meta = ()
               newBall = Just (BnB.bubble radius density restitution pos velocity meta)
               newCannon = { cannon | power = 0 }
-              modelInMotion = { newModel | ball = newBall, cannon = newCannon }
+              newLevel = { level | cannon = newCannon }
+              modelInMotion = { newModel | ball = newBall, level = newLevel }
             in
               (modelInMotion, Cmd.none)
           _ ->
@@ -270,8 +305,9 @@ evaluatePlay hasStopped model =
   case (hasStopped, model.ball) of
     (True, Just ball) ->
       let
-        isInTarget = ballIsInTarget ball model.target
-        cannon = model.cannon
+        level = model.level
+        isInTarget = ballIsInTarget ball level.target
+        cannon = level.cannon
         newBall = Nothing
         newShotCount = model.shotCount + 1
         newTotalShotCount = model.totalShotCount + 1
@@ -281,8 +317,9 @@ evaluatePlay hasStopped model =
         else
           let
             newCannon = { cannon | pos = ball.pos }
+            newLevel = { level | cannon = newCannon }
           in
-            { model | cannon = newCannon, shotCount = newShotCount, totalShotCount = newTotalShotCount, ball = newBall }
+            { model | level = newLevel, shotCount = newShotCount, totalShotCount = newTotalShotCount, ball = newBall }
     _ ->
       model
 
@@ -290,9 +327,9 @@ evaluatePlay2 : Bool -> Model -> Model
 evaluatePlay2 hasStopped model =
   case (hasStopped, model.ball) of
     (True, Just ball) ->
-      if ballIsInTarget ball model.target then
+      if ballIsInTarget ball model.level.target then
         case model.remainingLevels of
-          (newCannon, newBarriers, newTarget) :: newRemainingLevels ->
+          newLevel :: newRemainingLevels ->
             -- remove ball from play
             -- pop level from remaining levels
             -- push level onto finished levels
@@ -302,7 +339,7 @@ evaluatePlay2 hasStopped model =
             -- reset shot count
             -- increment total shot count
             let
-              newFinishedLevels = (model.cannon, model.barriers, model.target) :: model.finishedLevels
+              newFinishedLevels = (model.level) :: model.finishedLevels
               newBall = Nothing
               newShotCount = 0
               newTotalShotCount = model.totalShotCount + 1
@@ -311,9 +348,7 @@ evaluatePlay2 hasStopped model =
               | ball = newBall
               , remainingLevels = newRemainingLevels
               , finishedLevels = newFinishedLevels
-              , cannon = newCannon
-              , barriers = newBarriers
-              , target = newTarget
+              , level = newLevel
               , shotCount = newShotCount
               , totalShotCount = newTotalShotCount
               }
@@ -326,14 +361,16 @@ evaluatePlay2 hasStopped model =
         -- move cannon
         let
           newBall = Nothing
-          cannon = model.cannon
+          level = model.level
+          cannon = level.cannon
           newCannon = { cannon | pos = ball.pos }
+          newLevel = { level | cannon = newCannon }
           newShotCount = model.shotCount + 1
           newTotalShotCount = model.totalShotCount + 1
         in
           { model
           | ball = newBall
-          , cannon = newCannon
+          , level = newLevel
           , shotCount = newShotCount
           , totalShotCount = newTotalShotCount
           }
@@ -366,7 +403,7 @@ advanceBall hasStopped model =
         let
           newVelocity = reduceVelocity ball.velocity
           slowerBall = { ball | velocity = newVelocity }
-          shapes = (slowerBall :: model.bounds) ++ model.barriers
+          shapes = (slowerBall :: model.bounds) ++ model.level.barriers
           newShapes = BnB.step (0, 0) (0, 0) shapes
           newBall = findFirst isBubble newShapes
         in
@@ -381,22 +418,24 @@ rotateCannon model =
     isFine = not (keysPressed.shift == Nothing)
     isCoarse = not (keysPressed.alt == Nothing)
     now = model.time
+    level = model.level
     newCannon = case (keysPressed.left, keysPressed.right) of
       (Just pressTime, Nothing) ->
-        rotateCannonBy True isFine isCoarse (now - pressTime) model.cannon
+        rotateCannonBy True isFine isCoarse (now - pressTime) level.cannon
       (Nothing, Just pressTime) ->
-        rotateCannonBy False isFine isCoarse (now - pressTime) model.cannon
-      _ -> model.cannon
+        rotateCannonBy False isFine isCoarse (now - pressTime) level.cannon
+      _ -> level.cannon
+    newLevel = { level | cannon = newCannon }
   in
-    { model | cannon = newCannon }
+    { model | level = newLevel }
 
 rotateCannonBy : Bool -> Bool -> Bool -> Float -> Cannon -> Cannon
 rotateCannonBy isLeft isFine isCoarse speed cannon =
   let
     incr = max 1.0 speed
       |> logBase e
-      |> (\a -> a * 0.07)
-      |> (\a -> if isFine then a / 10 else a)
+      |> (\a -> a * 0.04)
+      |> (\a -> if isFine then a / 6 else a)
       |> (\a -> if isCoarse then a * 10 else a)
       |> (\a -> if isLeft then 0 - a else a)
     newAngle = cannon.angle - incr
@@ -409,26 +448,39 @@ chargeCannon model =
     Just pressTime ->
       let
         pressDuration = model.time - pressTime
-        cannon = model.cannon
+        level = model.level
+        cannon = level.cannon
         isFine = not (model.keysPressed.shift == Nothing)
         incr = pressDuration
-          |> (\d -> (d / 10) + 1)
+          |> (\d -> (d / 100) + 1)
           |> logBase e
           |> (\p -> if isFine then p / 10 else p)
         newPower = min 500 cannon.power + incr
         newCannon = { cannon | power = newPower }
+        newLevel = { level | cannon = newCannon }
       in
-        { model | cannon = newCannon }
+        { model | level = newLevel }
     Nothing ->
       model
 
 reduceVelocity : (Float, Float) -> (Float, Float)
 reduceVelocity (xVel, yVel) =
   let
-    hyp = sqrt (xVel * xVel + yVel * yVel)
-    factor = if hyp > 5 then 0.997 else if hyp > 0.3 then 0.994 else if hyp > 0.05 then 0.97 else 0
+    speed = sqrt (xVel * xVel + yVel * yVel)
+    newSpeed = max 0.0 ((speed * 0.99) - 0.0075)
+    slowDown = newSpeed / speed
+    newXVel = xVel * slowDown
+    newYVel = yVel * slowDown
+    --factor = if speed > 5 then
+    --  0.997
+    --else if speed > 0.3 then
+    --  0.990
+    --else if speed > 0.12 then
+    --  0.98
+    --else
+    --  0
   in
-    (xVel * factor, yVel * factor)
+    (newXVel, newYVel)
 
 isBubble : Bodies.Body x -> Bool
 isBubble body =
@@ -519,20 +571,22 @@ view model =
         , SAttr.width widthPx
         , SAttr.height heightPx
         ]
-        [ drawBarriers model.bounds
-        , drawBarriers model.barriers
-        , drawTarget model.target
-        , drawCannon model.cannon
+        [ defs
+        , drawBarriers model.bounds
+        , drawBarriers model.level.barriers
+        , drawTarget model.level.target
+        , drawCannon model.level.cannon
         , drawBall model.ball
+        , Svg.text_ [attrX 954, attrY 980, SAttr.class "par-label"] [Svg.text ("par = " ++ (toString model.level.par))]
         ]
       , Html.div
         [ HAttr.id "controls"
         , HAttr.style [("width", (toString model.controlport.width) ++ "px"), ("left", (toString model.playport.width) ++ "px")]
         ]
-        [ Html.h1 [] [Html.text "Electro-Golf 2000"]
+        [ Html.h1 [] [Html.text "Electron Golf 2000"]
         , Html.div [HAttr.class "tiles"]
           [ Html.div [HAttr.class "tile"]
-            [ Html.div [HAttr.class "tile-label"] [Html.text "This Round"]
+            [ Html.div [HAttr.class "tile-label"] [Html.text "Shots"]
             , Html.div [HAttr.class "tile-value"] [Html.text attempts]
             ]
           , Html.div [HAttr.class "tile"]
@@ -541,12 +595,16 @@ view model =
             ]
           , Html.div [HAttr.class "tile"]
             [ Html.div [HAttr.class "tile-label"] [Html.text "Level"]
-            , Html.div [HAttr.class "tile-value"] [Html.text (level ++ "/" ++ totalLevels)]
+            , Html.div [HAttr.class "tile-value"]
+              [ Html.text (level)
+              , Html.span [HAttr.class "slash"] [Html.text "/"]
+              , Html.text (totalLevels)
+              ]
             ]
           ]
         , Html.div [HAttr.class "directions"]
           [ Html.p []
-            [ Html.strong [] [Html.text "Your goal. "]
+            [ Html.strong [] [Html.text "The goal. "]
             , Html.text "Fire the cannon, positioning the ball into the target frame. Do this in as few moves as possible, like in actual golf."
             ]
           , Html.p []
@@ -558,9 +616,19 @@ view model =
             , Html.text "Press SPACEBAR to charge the cannon. Release to fire. Hold SHIFT while charging to fine-tune your velocity."
             ]
           ]
+        , Html.button [HEv.onClick Skip] [Html.text "skip"]
         ]
       ]
 
+defs : Svg Msg
+defs =
+  Svg.defs []
+    [ Svg.clipPath
+      [ SAttr.id "gutter-clip"
+      ]
+      [ Svg.rect [attrX 50, attrY 50, attrWidth 900, attrHeight 900] []
+      ]
+    ]
 
 drawViewBox : Int -> Int -> Int -> Int -> String
 drawViewBox x y width height =
@@ -613,6 +681,7 @@ type PathCommand
   | L Float Float
   | H Float
   | V Float
+  | Z
 
 drawPath : List PathCommand -> String
 drawPath commands =
@@ -620,13 +689,15 @@ drawPath commands =
     command :: rest ->
       case command of
         M x y ->
-          "m" ++ (toString x) ++ " " ++ (toString y) ++ " " ++ (drawPath rest)
+          " m" ++ (toString x) ++ " " ++ (toString y) ++ (drawPath rest)
         L x y ->
-          "l" ++ (toString x) ++ " " ++ (toString y) ++ " " ++ (drawPath rest)
+          " l" ++ (toString x) ++ " " ++ (toString y) ++ (drawPath rest)
         H len ->
-          "h" ++ (toString len) ++ " " ++ (drawPath rest)
+          " h" ++ (toString len) ++ (drawPath rest)
         V len ->
-          "v" ++ (toString len) ++ " " ++ (drawPath rest)
+          " v" ++ (toString len) ++ (drawPath rest)
+        Z ->
+          " z" ++ (drawPath rest)
     [] ->
       ""
 
