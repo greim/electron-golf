@@ -50,7 +50,7 @@ type alias Target =
   { pos : (Float, Float, Float, Float)
   }
 
-type PhysObj = BallObj | BarrierObj
+type PhysObj = BallObj | BarrierObj | BoundObj
 
 type alias Ball =
   Bodies.Body PhysObj
@@ -120,8 +120,8 @@ levels =
     2
   , Level
     (Cannon (880, 850) 255 0)
-    [ makeBarrier 333 50 1 666
-    , makeBarrier 666 333 1 618
+    [ makeBarrier 333 51 1 666
+    , makeBarrier 666 332 1 618
     ]
     (Target (100, 150, 100, 100))
     2
@@ -134,24 +134,24 @@ levels =
     2
   , Level
     (Cannon (900, 900) 270 0)
-    [ makeBarrier 840 230 1 720
-    , makeBarrier 900 170 50 1
+    [ makeBarrier 850 230 1 720
+    , makeBallBarrier 900 100 25
     ]
     (Target (690, 800, 100, 100))
     2
   , Level
     (Cannon (900, 100) 135 0)
-    [ makeBarrier 200 200 600 1
-    , makeBarrier 800 200 1 600
-    , makeBarrier 875 850 1 100
-    , makeBarrier 50 125 100 1
+    [ makeBarrier 220 200 580 1
+    , makeBarrier 800 200 1 580
+    , makeBallBarrier 198 200 20
+    , makeBallBarrier 800 802 20
     ]
     (Target (600, 300, 100, 100))
     2
   , Level
     (Cannon (100, 500) 0 0)
-    [ makeBarrier 200 200 600 1
-    , makeBarrier 200 800 600 1
+    [ makeBarrier 200 199 600 1
+    , makeBarrier 200 801 600 1
     , makeBarrier 200 200 1 600
     , makeBarrier 800 200 1 230
     , makeBarrier 800 570 1 230
@@ -160,8 +160,8 @@ levels =
     3
   , Level
     (Cannon (500, 500) 135 0)
-    [ makeBarrier 200 200 600 1
-    , makeBarrier 50 800 750 1
+    [ makeBarrier 200 199 600 1
+    , makeBarrier 51 801 750 1
     , makeBarrier 800 200 1 600
     , makeBarrier 200 200 1 200
     ]
@@ -205,10 +205,14 @@ levels =
     (Target (100, 800, 100, 100))
     2
   , Level
-    (Cannon (100, 100) 20 0)
-    []
-    (Target (500, 500, 150, 100))
-    1
+    (Cannon (500, 900) 270 0)
+    [ makeBouncyBarrier 162.5 450 111 0.1
+    , makeBouncyBarrier 387.5 400 111 0.1
+    , makeBouncyBarrier 612.5 400 111 0.1
+    , makeBouncyBarrier 837.5 450 111 0.1
+    ]
+    (Target (450, 100, 100, 100))
+    2
   , Level
     (Cannon (100, 100) 20 0)
     []
@@ -234,11 +238,33 @@ makeBarrier x y w h =
   in
     BnB.box (w, h) density restitution (cx, cy) velocity meta
 
+makeBound : Float -> Float -> Float -> Float -> Barrier
+makeBound x y w h =
+  let
+    cx = x + (w / 2)
+    cy = y + (h / 2)
+    inf = 1.0 / 0.0
+    density = inf
+    restitution = 1.0
+    velocity = (0, 0)
+    meta = BoundObj
+  in
+    BnB.box (w, h) density restitution (cx, cy) velocity meta
+
 makeBallBarrier : Float -> Float -> Float -> Barrier
 makeBallBarrier cx cy r =
   let
     inf = 1.0 / 0.0
     density = inf
+    restitution = 1.0
+    velocity = (0, 0)
+    meta = BarrierObj
+  in
+    BnB.bubble r density restitution (cx, cy) velocity meta
+
+makeBouncyBarrier : Float -> Float -> Float -> Float -> Barrier
+makeBouncyBarrier cx cy r density =
+  let
     restitution = 1.0
     velocity = (0, 0)
     meta = BarrierObj
@@ -259,25 +285,27 @@ init =
     --  1
 
     level = Level
-      (Cannon (150, 150) 0 0)
-      [ makeBarrier 500 500 450 1
-      , makeBarrier 50 300 450 1
-      , makeBarrier 50 700 450 1
-      , makeBallBarrier 250 500 125
-      , makeBallBarrier 750 275 125
-      , makeBallBarrier 750 725 125
+      (Cannon (500, 900) 270 0)
+      [ makeBouncyBarrier 162.5 450 111 0.1
+      , makeBouncyBarrier 387.5 400 111 0.1
+      , makeBouncyBarrier 612.5 400 111 0.1
+      , makeBouncyBarrier 837.5 450 111 0.1
       ]
-      (Target (100, 800, 100, 100))
+      (Target (450, 100, 100, 100))
       2
 
     keysPressed = KeysPressed Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
     ball = Nothing
     --bounds = BnB.bounds (900, 900) 1000 1.0 ( 500, 500 ) BarrierObj
     bounds =
-      [ makeBarrier -500 -450 2000 500
-      , makeBarrier -450 -500 500 2000
-      , makeBarrier -500 950 2000 500
-      , makeBarrier 950 -500 500 2000
+      [ makeBound 50 0 900 50
+      , makeBound 0 50 50 900
+      , makeBound 50 950 900 50
+      , makeBound 950 50 50 900
+      , makeBound 0 0 50 50
+      , makeBound 950 0 50 50
+      , makeBound 0 950 50 50
+      , makeBound 950 950 50 50
       ]
     time = 0
     shotCount = 0
@@ -433,9 +461,11 @@ evaluatePlay2 hasStopped model =
         -- increment shot count
         -- increment total shot count
         -- move cannon
+        -- halt floating barriers
         let
           newBall = Nothing
           level = model.level
+          newBarriers = level.barriers |> List.map (\b -> { b | velocity = (0,0) })
           cannon = level.cannon
           (x1, y1) = ball.pos
           (tx, ty, tw, th) = level.target.pos
@@ -443,7 +473,7 @@ evaluatePlay2 hasStopped model =
           y2 = ty + (th / 2)
           angle = (atan2 (y2 - y1) (x2 - x1)) * (360 / (pi * 2))
           newCannon = { cannon | pos = ball.pos, angle = angle }
-          newLevel = { level | cannon = newCannon }
+          newLevel = { level | cannon = newCannon, barriers = newBarriers }
           newShotCount = model.shotCount + 1
           newTotalShotCount = model.totalShotCount + 1
         in
@@ -480,13 +510,15 @@ advanceBall hasStopped model =
     case model.ball of
       Just ball ->
         let
-          newVelocity = reduceVelocity ball.velocity
-          slowerBall = { ball | velocity = newVelocity }
-          shapes = (slowerBall :: model.bounds) ++ model.level.barriers
+          level = model.level
+          shapes = (ball :: model.bounds) ++ level.barriers
           newShapes = BnB.step (0, 0) (0, 0) shapes
+            |> List.map reduceBodyVelocity
           newBall = findFirst isBall newShapes
+          newBarriers = List.filter isBarrier newShapes
+          newLevel = { level | barriers = newBarriers }
         in
-          { model | ball = newBall }
+          { model | ball = newBall, level = newLevel }
       Nothing ->
         model
 
@@ -542,6 +574,14 @@ chargeCannon model =
     Nothing ->
       model
 
+reduceBodyVelocity : Bodies.Body meta -> Bodies.Body meta
+reduceBodyVelocity  bod =
+  let
+    newVelocity = reduceVelocity bod.velocity
+    newBod = { bod | velocity = newVelocity }
+  in
+    newBod
+
 reduceVelocity : (Float, Float) -> (Float, Float)
 reduceVelocity (xVel, yVel) =
   let
@@ -550,22 +590,26 @@ reduceVelocity (xVel, yVel) =
     slowDown = newSpeed / speed
     newXVel = xVel * slowDown
     newYVel = yVel * slowDown
-    --factor = if speed > 5 then
-    --  0.997
-    --else if speed > 0.3 then
-    --  0.990
-    --else if speed > 0.12 then
-    --  0.98
-    --else
-    --  0
   in
-    (newXVel, newYVel)
+    (if isNaN newXVel then 0 else newXVel, if isNaN newYVel then 0 else newYVel)
 
 isBall : Bodies.Body PhysObj -> Bool
 isBall body =
   case body.meta of
     BallObj -> True
-    BarrierObj -> False
+    _ -> False
+
+isBarrier : Bodies.Body PhysObj -> Bool
+isBarrier body =
+  case body.meta of
+    BarrierObj -> True
+    _ -> False
+
+isBound : Bodies.Body PhysObj -> Bool
+isBound body =
+  case body.meta of
+    BoundObj -> True
+    _ -> False
 
 delay : Time -> msg -> Cmd msg
 delay time msg =
@@ -652,6 +696,7 @@ view model =
         ]
         [ defs
         , Svg.rect [attrX 50, attrY 50, attrWidth 900, attrHeight 900, SAttr.class "boundary"] []
+        --, drawBarriers model.bounds
         , drawBarriers model.level.barriers
         , drawTarget model.level.target
         , drawCannon model.level.cannon
@@ -805,7 +850,7 @@ drawCannon cannon =
     (x, y) = cannon.pos
     classAttr = SAttr.class "cannon"
     transformAttr = SAttr.transform ("translate(" ++ (toString x) ++ "," ++ (toString y) ++ ") rotate(" ++ (toString cannon.angle) ++ ")")
-    powerRadius = (cannon.power * 2.55) ^ 1.2
+    powerRadius = (cannon.power * 2.7) ^ 1.2
     powerOpacity = min 1.0 (1.0 - (powerRadius / 700))
     opacityStyle = "opacity:" ++ (toString powerOpacity)
   in
