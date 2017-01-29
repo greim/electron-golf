@@ -213,16 +213,6 @@ levels =
     ]
     (Target (450, 100, 100, 100))
     2
-  , Level
-    (Cannon (100, 100) 20 0)
-    []
-    (Target (500, 500, 150, 100))
-    1
-  , Level
-    (Cannon (100, 100) 20 0)
-    []
-    (Target (500, 500, 150, 100))
-    1
   ]
 
 makeBarrier : Float -> Float -> Float -> Float -> Barrier
@@ -278,21 +268,11 @@ init =
     playport = Window.Size 0 0
     controlport = Window.Size 0 0
 
-    --level = Level
-    --  (Cannon (100, 100) 45 0)
-    --  []
-    --  (Target (200, 200, 150, 150))
-    --  1
-
     level = Level
-      (Cannon (500, 900) 270 0)
-      [ makeBouncyBarrier 162.5 450 111 0.1
-      , makeBouncyBarrier 387.5 400 111 0.1
-      , makeBouncyBarrier 612.5 400 111 0.1
-      , makeBouncyBarrier 837.5 450 111 0.1
-      ]
-      (Target (450, 100, 100, 100))
-      2
+      (Cannon (100, 100) 45 0)
+      []
+      (Target (200, 200, 150, 150))
+      1
 
     keysPressed = KeysPressed Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
     ball = Nothing
@@ -367,8 +347,8 @@ update msg model =
         newKeysPressed = keysPressedOff keyCode model.time model.keysPressed
         newModel = { model | keysPressed = newKeysPressed }
       in
-        case keyCode of
-          32 ->
+        case (model.ball, keyCode) of
+          (Nothing, 32) ->
             let
               level = model.level
               cannon = level.cannon
@@ -398,35 +378,12 @@ update msg model =
           |> advanceBall hasStopped
           |> rotateCannon
           |> chargeCannon
-          |> evaluatePlay2 hasStopped
+          |> evaluatePlay hasStopped
       in
         (newModel, Cmd.none)
 
 evaluatePlay : Bool -> Model -> Model
 evaluatePlay hasStopped model =
-  case (hasStopped, model.ball) of
-    (True, Just ball) ->
-      let
-        level = model.level
-        isInTarget = ballIsInTarget ball level.target
-        cannon = level.cannon
-        newBall = Nothing
-        newShotCount = model.shotCount + 1
-        newTotalShotCount = model.totalShotCount + 1
-      in
-        if isInTarget then
-          { model | shotCount = newShotCount, totalShotCount = newTotalShotCount, ball = newBall }
-        else
-          let
-            newCannon = { cannon | pos = ball.pos }
-            newLevel = { level | cannon = newCannon }
-          in
-            { model | level = newLevel, shotCount = newShotCount, totalShotCount = newTotalShotCount, ball = newBall }
-    _ ->
-      model
-
-evaluatePlay2 : Bool -> Model -> Model
-evaluatePlay2 hasStopped model =
   case (hasStopped, model.ball) of
     (True, Just ball) ->
       if ballIsInTarget ball model.level.target then
@@ -435,9 +392,7 @@ evaluatePlay2 hasStopped model =
             -- remove ball from play
             -- pop level from remaining levels
             -- push level onto finished levels
-            -- replace cannon
-            -- replace target
-            -- replace barriers
+            -- update level
             -- reset shot count
             -- increment total shot count
             let
@@ -493,10 +448,10 @@ ballIsInTarget ball target =
       let
         (tx, ty, tw, th) = target.pos
         (bx, by) = ball.pos
-        boundLeft = tx + radius
-        boundRight = (tx + tw) - radius
-        boundHi = ty + radius
-        boundLo = (ty + th) - radius
+        boundLeft = tx
+        boundRight = (tx + tw)
+        boundHi = ty
+        boundLo = (ty + th)
       in
         not (bx < boundLeft || bx > boundRight || by < boundHi || by > boundLo)
     Bodies.Box ext ->
@@ -555,24 +510,28 @@ rotateCannonBy isLeft isFine isCoarse speed cannon =
 
 chargeCannon : Model -> Model
 chargeCannon model =
-  case model.keysPressed.space of
-    Just pressTime ->
-      let
-        pressDuration = model.time - pressTime
-        level = model.level
-        cannon = level.cannon
-        isFine = not (model.keysPressed.shift == Nothing)
-        incr = pressDuration
-          |> (\d -> (d / 100) + 1)
-          |> logBase e
-          |> (\p -> if isFine then p / 10 else p)
-        newPower = min 500 cannon.power + incr
-        newCannon = { cannon | power = newPower }
-        newLevel = { level | cannon = newCannon }
-      in
-        { model | level = newLevel }
-    Nothing ->
+  case model.ball of
+    Just ball ->
       model
+    Nothing ->
+      case model.keysPressed.space of
+        Just pressTime ->
+          let
+            pressDuration = model.time - pressTime
+            level = model.level
+            cannon = level.cannon
+            isFine = not (model.keysPressed.shift == Nothing)
+            incr = pressDuration
+              |> (\d -> (d / 100) + 1)
+              |> logBase e
+              |> (\p -> if isFine then p / 10 else p)
+            newPower = min 500 cannon.power + incr
+            newCannon = { cannon | power = newPower }
+            newLevel = { level | cannon = newCannon }
+          in
+            { model | level = newLevel }
+        Nothing ->
+          model
 
 reduceBodyVelocity : Bodies.Body meta -> Bodies.Body meta
 reduceBodyVelocity  bod =
@@ -687,6 +646,11 @@ view model =
     remCount = List.length model.remainingLevels
     level = toString (finCount + 1)
     totalLevels = toString (finCount + remCount + 1)
+    futurePar = List.foldl (\lvl tally -> tally + lvl.par) 0 model.remainingLevels
+    parSoFar = List.foldl (\lvl tally -> tally + lvl.par) 0 model.finishedLevels
+    parCompare = (model.totalShotCount - model.shotCount) - parSoFar
+    totalPar = futurePar + parSoFar + model.level.par
+    parCompareStr = if parCompare < 0 then toString parCompare else "+" ++ (toString parCompare)
   in
     Html.div []
       [ Svg.svg
@@ -708,22 +672,36 @@ view model =
         , HAttr.style [("width", (toString model.controlport.width) ++ "px"), ("left", (toString model.playport.width) ++ "px")]
         ]
         [ Html.h1 [] [Html.text "Electron Golf 2000"]
-        , Html.div [HAttr.class "tiles"]
+        , Html.div [HAttr.class "tiles one-tile"]
           [ Html.div [HAttr.class "tile"]
-            [ Html.div [HAttr.class "tile-label"] [Html.text "Shots"]
-            , Html.div [HAttr.class "tile-value"] [Html.text attempts]
+            [ Html.div [HAttr.class "tile-label"] [Html.text "Score"]
+            , Html.div [HAttr.class "tile-value"]
+              [ Html.text totalAttempts
+              , Html.span [HAttr.class "slash"] [Html.text "/"]
+              , Html.text parCompareStr
+              ]
             ]
-          , Html.div [HAttr.class "tile"]
-            [ Html.div [HAttr.class "tile-label"] [Html.text "Total Shots"]
-            , Html.div [HAttr.class "tile-value"] [Html.text totalAttempts]
+          ]
+        , Html.div [HAttr.class "tiles three-tile"]
+          [ Html.div [HAttr.class "tile"]
+            [ Html.div [HAttr.class "tile-label"] [Html.text "This Hole"]
+            , Html.div [HAttr.class "tile-value"]
+              [ Html.text attempts
+              , Html.span [HAttr.class "slash"] [Html.text "/"]
+              , Html.text (toString model.level.par)
+              ]
             ]
           , Html.div [HAttr.class "tile"]
             [ Html.div [HAttr.class "tile-label"] [Html.text "Level"]
             , Html.div [HAttr.class "tile-value"]
-              [ Html.text (level)
+              [ Html.text level
               , Html.span [HAttr.class "slash"] [Html.text "/"]
-              , Html.text (totalLevels)
+              , Html.text totalLevels
               ]
+            ]
+          , Html.div [HAttr.class "tile"]
+            [ Html.div [HAttr.class "tile-label"] [Html.text "Course Par"]
+            , Html.div [HAttr.class "tile-value"] [Html.text (toString totalPar)]
             ]
           ]
         , Html.div [HAttr.class "directions"]

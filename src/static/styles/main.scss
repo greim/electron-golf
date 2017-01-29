@@ -22,12 +22,13 @@ body {
   bottom: 0;
   color: #999;
   box-sizing: border-box;
-  padding: 35px 50px 35px 0;
+  padding: 35px 40px 35px 0;
   line-height: 1.7;
   font-size: 14px;
   font-weight: 100;
   background: #222;
   border-right: 1px solid #111;
+  margin-left: -10px;
   h1,h2,h3,h4,h5,h6 {
     color: #fff;
     font-weight: inherit;
@@ -42,39 +43,46 @@ body {
   }
   .tiles {
     display: flex;
-    margin: 20px -8px;
-    & + .tiles {
-      margin-top: -9px;
+    margin: 20px -10px;
+    &.one-tile .tile {
+      font-size: 3em;
+      width: 100%;
+    }
+    &.two-tile .tile {
+      font-size: 1.5em;
+      width: 50%;
+    }
+    &.three-tile .tile {
+      font-size: 1em;
+      width: 33%;
     }
     .tile {
+      padding: .9em .5em .25em;
       text-align: center;
-      line-height: 1.2;
+      line-height: 1.4;
       flex-grow: 1;
       flex-basis: auto;
-      width: 33.33333%;
       flex-shrink: 1;
       box-sizing: border-box;
-      padding: 10px 12px;
       background: rgba(0,0,0,0.25);
-      border: 1px solid #333;
-      margin: 0 5px;
-      border-radius: 5px;
+      border: 2px solid #333;
+      margin: 0 10px;
+      border-radius: 2px;
       color: #ccc;
       text-shadow: 0 0 3px rgba(255,255,255,0.5);
       box-shadow: 1px 2px 8px rgba(0,0,0,0.5) inset;
       .tile-label {
-        font-size: 12px;
-        opacity: .35;
+        font-size: .8em;
+        opacity: .25;
       }
       .tile-value {
-        position: relative;
-        top: 5px;
-        font-size: 30px;
+        font-size: 2em;
         text-shadow: 1px 2px 8px #000;
         font-weight: bold;
+        margin: .1em 0;
         .slash {
           font-weight: normal;
-          margin: 0 4px;
+          margin: 0 .2em;
           opacity: .25;
         }
       }
