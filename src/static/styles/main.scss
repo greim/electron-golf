@@ -188,6 +188,12 @@ text.par-label {
     stroke-width: 4px;
     stroke-linejoin: round;
   }
+  circle {
+    fill: rgba(255,255,255,0.15);
+    stroke: #fff;
+    stroke-width: 1px;
+    opacity: .25;
+  }
   &.goal {
     line.target-bound {
       stroke: #0f0;

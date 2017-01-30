@@ -17,6 +17,7 @@ import Transition exposing (Transition)
 --import V
 --import History exposing (History)
 --import Dom
+
 --import Debug exposing (log)
 
 main : Program Never Model Msg
@@ -27,7 +28,6 @@ main =
     , update = update
     , subscriptions = subscriptions
     }
-
 
 
 -- MODEL ############################################################################
@@ -96,18 +96,6 @@ levels =
     (Cannon (900, 900) 225 0)
     []
     (Target (100, 100, 150, 150))
-    1
-    0
-  , Level
-    (Cannon (500, 900) 225 0)
-    []
-    (Target (425, 100, 150, 150))
-    1
-    0
-  , Level
-    (Cannon (100, 900) 270 0)
-    []
-    (Target (850, 50, 100, 100))
     1
     0
   , Level
@@ -232,6 +220,36 @@ levels =
     , makeBarrier 725 400 222 1
     ]
     (Target (450, 100, 100, 100))
+    2
+    0
+  , Level
+    (Cannon (100, 100) 45 0)
+    [ makeBouncyBarrier 500 500 400 0.01
+    , makeBouncyBarrier 150 850 60 1.0
+    , makeBouncyBarrier 850 150 60 1.0
+    ]
+    (Target (800, 800, 100, 100))
+    3
+    0
+  , Level
+    (Cannon (100, 900) 315 0)
+    [ makeBouncyBarrier 150 330 70 0.02
+    , makeBouncyBarrier 325 330 70 0.02
+    , makeBouncyBarrier 500 330 70 0.02
+    , makeBouncyBarrier 675 330 70 0.02
+    , makeBouncyBarrier 850 330 70 0.02
+    , makeBouncyBarrier 150 500 70 0.02
+    , makeBouncyBarrier 325 500 70 0.02
+    , makeBouncyBarrier 500 500 70 0.02
+    , makeBouncyBarrier 675 500 70 0.02
+    , makeBouncyBarrier 850 500 70 0.02
+    , makeBouncyBarrier 150 670 70 0.02
+    , makeBouncyBarrier 325 670 70 0.02
+    , makeBouncyBarrier 500 670 70 0.02
+    , makeBouncyBarrier 675 670 70 0.02
+    , makeBouncyBarrier 850 670 70 0.02
+    ]
+    (Target (800, 100, 100, 100))
     2
     0
   ]
@@ -392,9 +410,7 @@ update msg model =
 
     Frame time ->
       let
-        hasStopped = case model.ball of
-          Just ball -> ball.velocity == (0, 0)
-          Nothing -> False
+        hasStopped = itemsAreAtRest model.ball model.level.barriers
         newModel = { model | time = model.time + time }
           |> advanceBall hasStopped
           |> rotateCannon
@@ -403,6 +419,26 @@ update msg model =
           |> advanceTransition
       in
         (newModel, Cmd.none)
+
+itemsAreAtRest : Maybe (Bodies.Body a) -> List (Bodies.Body a) -> Bool
+itemsAreAtRest ball barriers =
+  case ball of
+    Nothing ->
+      False
+    Just ball ->
+      (ball :: barriers)
+        |> everyItem (\b -> b.velocity == (0, 0))
+
+everyItem : (a -> Bool) -> List a -> Bool
+everyItem fn things =
+  case things of
+    thing :: rest ->
+      if fn thing then
+        everyItem fn rest
+      else
+        False
+    [] ->
+      True
 
 advanceTransition : Model -> Model
 advanceTransition model =
@@ -433,10 +469,7 @@ evaluatePlay hasStopped model =
               newLastLevel = { lastLevel | score = lastLevel.score + 1 }
               newFinishedLevels = newLastLevel :: model.finishedLevels
               newBall = Nothing
-              (targetCX1, targetCY1) = ball.pos
-              (targetX2, targetY2, targetW2, targetH2) = newLevel.target.pos
-              targetCX2 = targetX2 + (targetW2 / 2)
-              targetCY2 = targetY2 + (targetH2 / 2)
+              explosionPoint = ball.pos
               parDiff = newLastLevel.score - newLastLevel.par
               message = if parDiff == -2 then
                 "O.o"
@@ -445,13 +478,10 @@ evaluatePlay hasStopped model =
               else if parDiff == 0 then
                 "Nice."
               else
-                "Moving on..."
+                "Okay!"
               newTransition = Transition
                 message
-                (targetCX1, targetCY1)
-                lastLevel.cannon.pos
-                (targetCX2, targetCY2)
-                newLevel.cannon.pos
+                explosionPoint
                 (Transition.Exploding 0)
                 lastLevel
                 newLevel
@@ -724,8 +754,7 @@ view model =
         [ HAttr.id "controls"
         , HAttr.style [("width", (toString model.controlport.width) ++ "px"), ("left", (toString model.playport.width) ++ "px")]
         ]
-        [ Html.h1 [] [Html.text "Electron Golf 2000"]
-        , Html.div [HAttr.class "tiles one-tile"]
+        [ Html.div [HAttr.class "tiles one-tile"]
           [ Html.div [HAttr.class "tile"]
             [ Html.div [HAttr.class "tile-label"] [Html.text "Score"]
             , Html.div [HAttr.class "tile-value"]
@@ -757,18 +786,23 @@ view model =
             , Html.div [HAttr.class "tile-value"] [Html.text (toString totalPar)]
             ]
           ]
+        , Html.h1 [] [Html.text "Electron Golf"]
         , Html.div [HAttr.class "directions"]
           [ Html.p []
-            [ Html.strong [] [Html.text "The goal. "]
-            , Html.text "Fire the cannon, positioning the ball into the target frame. Do this in as few moves as possible, like in actual golf."
+            [ Html.strong [] [Html.text "Goal: "]
+            , Html.text "Fire the electron cannon at the proton held in the target frame. Under highly stable conditions, the electron will be absorbed! Achieve this in as few shots as possible; lower scores are better."
             ]
           , Html.p []
-            [ Html.strong [] [Html.text "How to aim. "]
-            , Html.text "Use the left/right arrow keys. Hold down SHIFT to fine-tune your angle. Hold down ALT to rotate quickly."
+            [ Html.strong [] [Html.text "Aim: "]
+            , Html.text "LEFT/RIGHT (SHIFT to fine-tune, ALT to spin fast)"
             ]
           , Html.p []
-            [ Html.strong [] [Html.text "How to fire. "]
-            , Html.text "Press SPACEBAR to charge the cannon. Release to fire. Hold SHIFT while charging to fine-tune your velocity."
+            [ Html.strong [] [Html.text "Fire: "]
+            , Html.text "SPACEBAR to charge cannon. Release to fire."
+            ]
+          , Html.p []
+            [ Html.strong [] [Html.text "Putt: "]
+            , Html.text "SHIFT while pressing SPACEBAR."
             ]
           ]
         , Html.button [HEv.onClick Skip] [Html.text "skip"]
@@ -798,7 +832,7 @@ drawTransition transition =
       case transition.phase of
         Transition.Exploding step ->
           let
-            (cx, cy) = transition.targetPosOrig
+            (cx, cy) = transition.explosionPoint
             r = toFloat step
             opac = 1.0 - Transition.getExplodingCompleteness transition
             style = "opacity:" ++ (toString opac)
@@ -812,8 +846,6 @@ drawTransition transition =
             [ transitionBlankout
             , Svg.text_ [attrX 500, attrY 500, attrClass "transition-message"] [Svg.text transition.message]
             ]
-        _ ->
-          Svg.g [] []
 
 drawViewBox : Int -> Int -> Int -> Int -> String
 drawViewBox x y width height =
@@ -824,6 +856,9 @@ drawTarget target =
   let
     (x, y, width, height) = target.pos
     translate = "translate(" ++ (toString x) ++ " " ++ (toString y) ++ ")"
+    cx = width / 2
+    cy = height / 2
+    r = ((min width height) / 2) - 15
   in
     Svg.g
       [ SAttr.transform translate
@@ -837,6 +872,7 @@ drawTarget target =
       , drawTargetCorner (width) (0) (-20) (20)
       , drawTargetCorner (width) (height) (-20) (-20)
       , drawTargetCorner (0) (height) (20) (-20)
+      , Svg.circle [attrCX cx, attrCY cy, attrR r] []
       ]
 
 drawTargetBound : Float -> Float -> Float -> Float -> Svg Msg
@@ -912,7 +948,7 @@ drawCannon cannon =
     classAttr = SAttr.class "cannon"
     transformAttr = SAttr.transform ("translate(" ++ (toString x) ++ "," ++ (toString y) ++ ") rotate(" ++ (toString cannon.angle) ++ ")")
     powerRadius = (cannon.power * 2.7) ^ 1.2
-    powerOpacity = min 1.0 (1.0 - (powerRadius / 700))
+    powerOpacity = min 1.0 (1.0 - (powerRadius / 900))
     opacityStyle = "opacity:" ++ (toString powerOpacity)
   in
     Svg.g
