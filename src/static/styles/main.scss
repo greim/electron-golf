@@ -110,6 +110,24 @@ rect.block {
   opacity: .9;
 }
 
+rect.transition-blankout {
+  fill: #222;
+  stroke-width: 0;
+}
+
+circle.transition-explosion {
+  fill: transparent;
+  stroke: #fff;
+  stroke-width: 20px;
+}
+
+text.transition-message {
+  text-anchor: middle;
+  dominant-baseline: middle;
+  fill: #fff;
+  font-size: 70px;
+}
+
 text.par-label {
   text-anchor: end;
   fill: #fff;

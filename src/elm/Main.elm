@@ -11,12 +11,13 @@ import Keyboard
 import AnimationFrame
 import BoxesAndBubbles.Bodies as Bodies
 import BoxesAndBubbles as BnB
+import Transition exposing (Transition)
 --import Json.Decode as Json
 --import Set exposing (Set)
 --import V
 --import History exposing (History)
 --import Dom
-import Debug exposing (log)
+--import Debug exposing (log)
 
 main : Program Never Model Msg
 main =
@@ -40,10 +41,9 @@ type alias Model =
   , ball : Maybe Ball
   , bounds : List Barrier
   , time : Time
-  , shotCount : Int
-  , totalShotCount : Int
   , remainingLevels : List Level
   , finishedLevels : List Level
+  , transition : Maybe (Transition Level)
   }
 
 type alias Target =
@@ -81,6 +81,7 @@ type alias Level =
   , barriers : List Barrier
   , target : Target
   , par : Int
+  , score: Int
   }
 
 levels : List Level
@@ -90,34 +91,43 @@ levels =
     []
     (Target (450, 400, 150, 150))
     1
+    0
   , Level
     (Cannon (900, 900) 225 0)
     []
     (Target (100, 100, 150, 150))
     1
+    0
   , Level
     (Cannon (500, 900) 225 0)
     []
     (Target (425, 100, 150, 150))
     1
+    0
   , Level
     (Cannon (100, 900) 270 0)
     []
     (Target (850, 50, 100, 100))
     1
+    0
   , Level
     (Cannon (100, 100) 65 0)
     [ makeBarrier 500 50 1 600
     ]
     (Target (750, 100, 150, 150))
     1
+    0
   , Level
-    (Cannon (880, 400) 166.56 0)
-    [ makeBarrier 50 500 370 1
-    , makeBarrier 580 500 370 1
+    (Cannon (880, 450) 202 0)
+    [ makeBarrier 50 500 349 1
+    , makeBarrier 601 500 349 1
+    , makeBallBarrier 410 500 10
+    , makeBallBarrier 590 500 10
+    , makeBallBarrier 500 200 100
     ]
     (Target (800, 800, 100, 100))
     2
+    0
   , Level
     (Cannon (880, 850) 255 0)
     [ makeBarrier 333 51 1 666
@@ -125,6 +135,7 @@ levels =
     ]
     (Target (100, 150, 100, 100))
     2
+    0
   , Level
     (Cannon (500, 800) 270 0)
     [ makeBarrier 200 333 600 1
@@ -132,6 +143,7 @@ levels =
     ]
     (Target (450, 140, 100, 100))
     2
+    0
   , Level
     (Cannon (900, 900) 270 0)
     [ makeBarrier 850 230 1 720
@@ -139,6 +151,7 @@ levels =
     ]
     (Target (690, 800, 100, 100))
     2
+    0
   , Level
     (Cannon (900, 100) 135 0)
     [ makeBarrier 220 200 580 1
@@ -148,6 +161,7 @@ levels =
     ]
     (Target (600, 300, 100, 100))
     2
+    0
   , Level
     (Cannon (100, 500) 0 0)
     [ makeBarrier 200 199 600 1
@@ -158,6 +172,7 @@ levels =
     ]
     (Target (450, 450, 100, 100))
     3
+    0
   , Level
     (Cannon (500, 500) 135 0)
     [ makeBarrier 200 199 600 1
@@ -167,6 +182,7 @@ levels =
     ]
     (Target (75, 825, 100, 100))
     3
+    0
   , Level
     (Cannon (500, 100) 90 0)
     [ makeBarrier 50 250 375 1
@@ -177,6 +193,7 @@ levels =
     ]
     (Target (800, 800, 100, 100))
     3
+    0
   , Level
     (Cannon (100, 500) 0 0)
     [ makeBallBarrier 500 500 210
@@ -187,12 +204,14 @@ levels =
     ]
     (Target (800, 450, 100, 100))
     3
+    0
   , Level
     (Cannon (170, 170) 45 0)
     [ makeBallBarrier 500 500 400
     ]
     (Target (800, 800, 100, 100))
     3
+    0
   , Level
     (Cannon (150, 150) 0 0)
     [ makeBarrier 500 500 450 1
@@ -204,15 +223,17 @@ levels =
     ]
     (Target (100, 800, 100, 100))
     3
+    0
   , Level
     (Cannon (500, 900) 270 0)
-    [ makeBouncyBarrier 162.5 450 111 0.1
-    , makeBouncyBarrier 387.5 400 111 0.1
-    , makeBouncyBarrier 612.5 400 111 0.1
-    , makeBouncyBarrier 837.5 450 111 0.1
+    [ makeBarrier 51 400 222 1
+    , makeBouncyBarrier 387 400 111 0.01
+    , makeBouncyBarrier 613 400 111 0.01
+    , makeBarrier 725 400 222 1
     ]
     (Target (450, 100, 100, 100))
     2
+    0
   ]
 
 makeBarrier : Float -> Float -> Float -> Float -> Barrier
@@ -273,6 +294,7 @@ init =
       []
       (Target (200, 200, 150, 150))
       1
+      0
 
     keysPressed = KeysPressed Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
     ball = Nothing
@@ -288,11 +310,10 @@ init =
       , makeBound 950 950 50 50
       ]
     time = 0
-    shotCount = 0
-    totalShotCount = 0
     remainingLevels = levels
     finishedLevels = []
-    model = Model viewport playport controlport level keysPressed ball bounds time shotCount totalShotCount remainingLevels finishedLevels
+    transition = Nothing
+    model = Model viewport playport controlport level keysPressed ball bounds time remainingLevels finishedLevels transition
     cmd = Task.perform Resize Window.size
   in
     (model, cmd)
@@ -379,8 +400,20 @@ update msg model =
           |> rotateCannon
           |> chargeCannon
           |> evaluatePlay hasStopped
+          |> advanceTransition
       in
         (newModel, Cmd.none)
+
+advanceTransition : Model -> Model
+advanceTransition model =
+  case model.transition of
+    Just transition ->
+      let
+        newTransition = Transition.step transition
+      in
+        { model | transition = newTransition }
+    Nothing ->
+      model
 
 evaluatePlay : Bool -> Model -> Model
 evaluatePlay hasStopped model =
@@ -392,29 +425,49 @@ evaluatePlay hasStopped model =
             -- remove ball from play
             -- pop level from remaining levels
             -- push level onto finished levels
+            -- increment score
             -- update level
-            -- reset shot count
-            -- increment total shot count
+            -- create a transition
             let
-              newFinishedLevels = (model.level) :: model.finishedLevels
+              lastLevel = model.level
+              newLastLevel = { lastLevel | score = lastLevel.score + 1 }
+              newFinishedLevels = newLastLevel :: model.finishedLevels
               newBall = Nothing
-              newShotCount = 0
-              newTotalShotCount = model.totalShotCount + 1
+              (targetCX1, targetCY1) = ball.pos
+              (targetX2, targetY2, targetW2, targetH2) = newLevel.target.pos
+              targetCX2 = targetX2 + (targetW2 / 2)
+              targetCY2 = targetY2 + (targetH2 / 2)
+              parDiff = newLastLevel.score - newLastLevel.par
+              message = if parDiff == -2 then
+                "O.o"
+              else if parDiff == -1 then
+                "WOW!"
+              else if parDiff == 0 then
+                "Nice."
+              else
+                "Moving on..."
+              newTransition = Transition
+                message
+                (targetCX1, targetCY1)
+                lastLevel.cannon.pos
+                (targetCX2, targetCY2)
+                newLevel.cannon.pos
+                (Transition.Exploding 0)
+                lastLevel
+                newLevel
             in
               { model
               | ball = newBall
               , remainingLevels = newRemainingLevels
               , finishedLevels = newFinishedLevels
               , level = newLevel
-              , shotCount = newShotCount
-              , totalShotCount = newTotalShotCount
+              , transition = Just newTransition
               }
           [] ->
-            model
+            { model | ball = Nothing }
       else
         -- remove ball from play
-        -- increment shot count
-        -- increment total shot count
+        -- increment score
         -- move cannon
         -- halt floating barriers
         let
@@ -428,15 +481,12 @@ evaluatePlay hasStopped model =
           y2 = ty + (th / 2)
           angle = (atan2 (y2 - y1) (x2 - x1)) * (360 / (pi * 2))
           newCannon = { cannon | pos = ball.pos, angle = angle }
-          newLevel = { level | cannon = newCannon, barriers = newBarriers }
-          newShotCount = model.shotCount + 1
-          newTotalShotCount = model.totalShotCount + 1
+          newScore = level.score + 1
+          newLevel = { level | cannon = newCannon, barriers = newBarriers, score = newScore }
         in
           { model
           | ball = newBall
           , level = newLevel
-          , shotCount = newShotCount
-          , totalShotCount = newTotalShotCount
           }
     _ ->
       model
@@ -640,15 +690,17 @@ view model =
     heightStr = toString model.playport.height
     widthPx = widthStr ++ "px"
     heightPx = heightStr ++ "px"
-    attempts = toString model.shotCount
-    totalAttempts = toString model.totalShotCount
+    attempts = toString model.level.score
     finCount = List.length model.finishedLevels
     remCount = List.length model.remainingLevels
     level = toString (finCount + 1)
     totalLevels = toString (finCount + remCount + 1)
     futurePar = List.foldl (\lvl tally -> tally + lvl.par) 0 model.remainingLevels
     parSoFar = List.foldl (\lvl tally -> tally + lvl.par) 0 model.finishedLevels
-    parCompare = (model.totalShotCount - model.shotCount) - parSoFar
+    prevTotal = List.foldl (\lvl tally -> tally + lvl.score) 0 model.finishedLevels
+    total = prevTotal + model.level.score
+    totalAttempts = toString total
+    parCompare = prevTotal - parSoFar
     totalPar = futurePar + parSoFar + model.level.par
     parCompareStr = if parCompare < 0 then toString parCompare else "+" ++ (toString parCompare)
   in
@@ -666,6 +718,7 @@ view model =
         , drawCannon model.level.cannon
         , drawBall model.ball
         , Svg.text_ [attrX 954, attrY 980, SAttr.class "par-label"] [Svg.text ("par = " ++ (toString model.level.par))]
+        , drawTransition model.transition
         ]
       , Html.div
         [ HAttr.id "controls"
@@ -731,6 +784,36 @@ defs =
       [ Svg.rect [attrX 50, attrY 50, attrWidth 900, attrHeight 900] []
       ]
     ]
+
+transitionBlankout : Svg Msg
+transitionBlankout =
+  Svg.rect [attrX 51, attrY 51, attrWidth 898, attrHeight 898, attrClass "transition-blankout"] []
+
+drawTransition : Maybe (Transition Level) -> Svg Msg
+drawTransition transition =
+  case transition of
+    Nothing ->
+      Svg.g [] []
+    Just transition ->
+      case transition.phase of
+        Transition.Exploding step ->
+          let
+            (cx, cy) = transition.targetPosOrig
+            r = toFloat step
+            opac = 1.0 - Transition.getExplodingCompleteness transition
+            style = "opacity:" ++ (toString opac)
+          in
+            Svg.g []
+              [ transitionBlankout
+              , Svg.circle [attrCX cx, attrCY cy, attrR r, SAttr.style style, attrClass "transition-explosion"] []
+              ]
+        Transition.Messaging step ->
+          Svg.g []
+            [ transitionBlankout
+            , Svg.text_ [attrX 500, attrY 500, attrClass "transition-message"] [Svg.text transition.message]
+            ]
+        _ ->
+          Svg.g [] []
 
 drawViewBox : Int -> Int -> Int -> Int -> String
 drawViewBox x y width height =
