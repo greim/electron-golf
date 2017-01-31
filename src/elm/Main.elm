@@ -10,8 +10,8 @@ import Time exposing (Time)
 import Keyboard
 import AnimationFrame
 import BoxesAndBubbles.Bodies as Bodies
-import BoxesAndBubbles as BnB
 import Transition exposing (Transition)
+import Phys
 --import Json.Decode as Json
 --import Set exposing (Set)
 --import V
@@ -38,8 +38,7 @@ type alias Model =
   , controlport : Window.Size
   , level : Level
   , keysPressed : KeysPressed
-  , ball : Maybe Ball
-  , bounds : List Barrier
+  , ball : Maybe Phys.Obj
   , time : Time
   , remainingLevels : List Level
   , finishedLevels : List Level
@@ -49,14 +48,6 @@ type alias Model =
 type alias Target =
   { pos : (Float, Float, Float, Float)
   }
-
-type PhysObj = BallObj | BarrierObj | BoundObj
-
-type alias Ball =
-  Bodies.Body PhysObj
-
-type alias Barrier =
-  Bodies.Body PhysObj
 
 type alias Cannon =
   { pos : (Float, Float)
@@ -78,7 +69,7 @@ type alias KeysPressed =
 
 type alias Level =
   { cannon : Cannon
-  , barriers : List Barrier
+  , barriers : List Phys.Obj
   , target : Target
   , par : Int
   , score: Int
@@ -100,205 +91,159 @@ levels =
     0
   , Level
     (Cannon (100, 100) 65 0)
-    [ makeBarrier 500 50 1 600
+    [ Phys.vertBarrier 500 50 600
     ]
     (Target (750, 100, 150, 150))
     1
     0
   , Level
     (Cannon (880, 450) 202 0)
-    [ makeBarrier 50 500 349 1
-    , makeBarrier 601 500 349 1
-    , makeBallBarrier 410 500 10
-    , makeBallBarrier 590 500 10
-    , makeBallBarrier 500 200 100
+    [ Phys.horizBarrier 50 500 349
+    , Phys.horizBarrier 601 500 349
+    , Phys.bubbleBarrier 410 500 10
+    , Phys.bubbleBarrier 590 500 10
+    , Phys.bubbleBarrier 500 200 100
     ]
     (Target (800, 800, 100, 100))
     2
     0
   , Level
     (Cannon (880, 850) 255 0)
-    [ makeBarrier 333 51 1 666
-    , makeBarrier 666 332 1 618
+    [ Phys.vertBarrier 333 51 666
+    , Phys.vertBarrier 666 332 618
     ]
     (Target (100, 150, 100, 100))
     2
     0
   , Level
     (Cannon (500, 800) 270 0)
-    [ makeBarrier 200 333 600 1
-    , makeBarrier 200 666 600 1
+    [ Phys.horizBarrier 200 333 600
+    , Phys.horizBarrier 200 666 600
     ]
     (Target (450, 140, 100, 100))
     2
     0
   , Level
     (Cannon (900, 900) 270 0)
-    [ makeBarrier 850 230 1 720
-    , makeBallBarrier 900 100 25
+    [ Phys.vertBarrier 850 230 720
+    , Phys.bubbleBarrier 900 100 25
     ]
     (Target (690, 800, 100, 100))
     2
     0
   , Level
     (Cannon (900, 100) 135 0)
-    [ makeBarrier 220 200 580 1
-    , makeBarrier 800 200 1 580
-    , makeBallBarrier 198 200 20
-    , makeBallBarrier 800 802 20
+    [ Phys.horizBarrier 220 200 580
+    , Phys.vertBarrier 800 200 580
+    , Phys.bubbleBarrier 198 200 20
+    , Phys.bubbleBarrier 800 802 20
     ]
     (Target (600, 300, 100, 100))
     2
     0
   , Level
     (Cannon (100, 500) 0 0)
-    [ makeBarrier 200 199 600 1
-    , makeBarrier 200 801 600 1
-    , makeBarrier 200 200 1 600
-    , makeBarrier 800 200 1 230
-    , makeBarrier 800 570 1 230
+    [ Phys.horizBarrier 200 199 600
+    , Phys.horizBarrier 200 801 600
+    , Phys.vertBarrier 200 200 600
+    , Phys.vertBarrier 800 200 230
+    , Phys.vertBarrier 800 570 230
     ]
     (Target (450, 450, 100, 100))
     3
     0
   , Level
     (Cannon (500, 500) 135 0)
-    [ makeBarrier 200 199 600 1
-    , makeBarrier 51 801 750 1
-    , makeBarrier 800 200 1 600
-    , makeBarrier 200 200 1 200
+    [ Phys.horizBarrier 200 199 600
+    , Phys.horizBarrier 51 801 750
+    , Phys.vertBarrier 800 200 600
+    , Phys.vertBarrier 200 200 200
     ]
     (Target (75, 825, 100, 100))
     3
     0
   , Level
     (Cannon (500, 100) 90 0)
-    [ makeBarrier 50 250 375 1
-    , makeBarrier 575 250 375 1
-    , makeBarrier 150 500 700 1
-    , makeBarrier 50 750 375 1
-    , makeBarrier 575 750 375 1
+    [ Phys.horizBarrier 50 250 375
+    , Phys.horizBarrier 575 250 375
+    , Phys.horizBarrier 150 500 700
+    , Phys.horizBarrier 50 750 375
+    , Phys.horizBarrier 575 750 375
     ]
     (Target (800, 800, 100, 100))
     3
     0
   , Level
     (Cannon (100, 500) 0 0)
-    [ makeBallBarrier 500 500 210
-    , makeBallBarrier 250 250 100
-    , makeBallBarrier 250 750 100
-    , makeBallBarrier 750 250 100
-    , makeBallBarrier 750 750 100
+    [ Phys.bubbleBarrier 500 500 210
+    , Phys.bubbleBarrier 250 250 100
+    , Phys.bubbleBarrier 250 750 100
+    , Phys.bubbleBarrier 750 250 100
+    , Phys.bubbleBarrier 750 750 100
     ]
     (Target (800, 450, 100, 100))
     3
     0
   , Level
     (Cannon (170, 170) 45 0)
-    [ makeBallBarrier 500 500 400
+    [ Phys.bubbleBarrier 500 500 400
     ]
     (Target (800, 800, 100, 100))
     3
     0
   , Level
     (Cannon (150, 150) 0 0)
-    [ makeBarrier 500 500 450 1
-    , makeBarrier 50 300 450 1
-    , makeBarrier 50 700 450 1
-    , makeBallBarrier 250 500 125
-    , makeBallBarrier 750 275 125
-    , makeBallBarrier 750 725 125
+    [ Phys.horizBarrier 500 500 450
+    , Phys.horizBarrier 50 300 450
+    , Phys.horizBarrier 50 700 450
+    , Phys.bubbleBarrier 250 500 125
+    , Phys.bubbleBarrier 750 275 125
+    , Phys.bubbleBarrier 750 725 125
     ]
     (Target (100, 800, 100, 100))
     3
     0
   , Level
     (Cannon (500, 900) 270 0)
-    [ makeBarrier 51 400 222 1
-    , makeBouncyBarrier 387 400 111 0.01
-    , makeBouncyBarrier 613 400 111 0.01
-    , makeBarrier 725 400 222 1
+    [ Phys.horizBarrier 51 400 222
+    , Phys.bouncyBarrier 387 400 111 0.01
+    , Phys.bouncyBarrier 613 400 111 0.01
+    , Phys.horizBarrier 725 400 222
     ]
     (Target (450, 100, 100, 100))
     2
     0
   , Level
     (Cannon (100, 100) 45 0)
-    [ makeBouncyBarrier 500 500 400 0.01
-    , makeBouncyBarrier 150 850 60 1.0
-    , makeBouncyBarrier 850 150 60 1.0
+    [ Phys.bouncyBarrier 500 500 400 0.01
+    , Phys.bouncyBarrier 150 850 60 1.0
+    , Phys.bouncyBarrier 850 150 60 1.0
     ]
     (Target (800, 800, 100, 100))
     3
     0
   , Level
     (Cannon (100, 900) 315 0)
-    [ makeBouncyBarrier 150 330 70 0.02
-    , makeBouncyBarrier 325 330 70 0.02
-    , makeBouncyBarrier 500 330 70 0.02
-    , makeBouncyBarrier 675 330 70 0.02
-    , makeBouncyBarrier 850 330 70 0.02
-    , makeBouncyBarrier 150 500 70 0.02
-    , makeBouncyBarrier 325 500 70 0.02
-    , makeBouncyBarrier 500 500 70 0.02
-    , makeBouncyBarrier 675 500 70 0.02
-    , makeBouncyBarrier 850 500 70 0.02
-    , makeBouncyBarrier 150 670 70 0.02
-    , makeBouncyBarrier 325 670 70 0.02
-    , makeBouncyBarrier 500 670 70 0.02
-    , makeBouncyBarrier 675 670 70 0.02
-    , makeBouncyBarrier 850 670 70 0.02
+    [ Phys.bouncyBarrier 150 330 70 0.02
+    , Phys.bouncyBarrier 325 330 70 0.02
+    , Phys.bouncyBarrier 500 330 70 0.02
+    , Phys.bouncyBarrier 675 330 70 0.02
+    , Phys.bouncyBarrier 850 330 70 0.02
+    , Phys.bouncyBarrier 150 500 70 0.02
+    , Phys.bouncyBarrier 325 500 70 0.02
+    , Phys.bouncyBarrier 500 500 70 0.02
+    , Phys.bouncyBarrier 675 500 70 0.02
+    , Phys.bouncyBarrier 850 500 70 0.02
+    , Phys.bouncyBarrier 150 670 70 0.02
+    , Phys.bouncyBarrier 325 670 70 0.02
+    , Phys.bouncyBarrier 500 670 70 0.02
+    , Phys.bouncyBarrier 675 670 70 0.02
+    , Phys.bouncyBarrier 850 670 70 0.02
     ]
     (Target (800, 100, 100, 100))
     2
     0
   ]
-
-makeBarrier : Float -> Float -> Float -> Float -> Barrier
-makeBarrier x y w h =
-  let
-    cx = x + (w / 2)
-    cy = y + (h / 2)
-    inf = 1.0 / 0.0
-    density = inf
-    restitution = 1.0
-    velocity = (0, 0)
-    meta = BarrierObj
-  in
-    BnB.box (w, h) density restitution (cx, cy) velocity meta
-
-makeBound : Float -> Float -> Float -> Float -> Barrier
-makeBound x y w h =
-  let
-    cx = x + (w / 2)
-    cy = y + (h / 2)
-    inf = 1.0 / 0.0
-    density = inf
-    restitution = 1.0
-    velocity = (0, 0)
-    meta = BoundObj
-  in
-    BnB.box (w, h) density restitution (cx, cy) velocity meta
-
-makeBallBarrier : Float -> Float -> Float -> Barrier
-makeBallBarrier cx cy r =
-  let
-    inf = 1.0 / 0.0
-    density = inf
-    restitution = 1.0
-    velocity = (0, 0)
-    meta = BarrierObj
-  in
-    BnB.bubble r density restitution (cx, cy) velocity meta
-
-makeBouncyBarrier : Float -> Float -> Float -> Float -> Barrier
-makeBouncyBarrier cx cy r density =
-  let
-    restitution = 1.0
-    velocity = (0, 0)
-    meta = BarrierObj
-  in
-    BnB.bubble r density restitution (cx, cy) velocity meta
 
 init : (Model, Cmd Msg)
 init =
@@ -317,21 +262,11 @@ init =
     keysPressed = KeysPressed Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
     ball = Nothing
     --bounds = BnB.bounds (900, 900) 1000 1.0 ( 500, 500 ) BarrierObj
-    bounds =
-      [ makeBound 50 0 900 50
-      , makeBound 0 50 50 900
-      , makeBound 50 950 900 50
-      , makeBound 950 50 50 900
-      , makeBound 0 0 50 50
-      , makeBound 950 0 50 50
-      , makeBound 0 950 50 50
-      , makeBound 950 950 50 50
-      ]
     time = 0
     remainingLevels = levels
     finishedLevels = []
     transition = Nothing
-    model = Model viewport playport controlport level keysPressed ball bounds time remainingLevels finishedLevels transition
+    model = Model viewport playport controlport level keysPressed ball time remainingLevels finishedLevels transition
     cmd = Task.perform Resize Window.size
   in
     (model, cmd)
@@ -391,15 +326,8 @@ update msg model =
             let
               level = model.level
               cannon = level.cannon
-              velX = (cos (degrees cannon.angle)) * (cannon.power / 10)
-              velY = (sin (degrees cannon.angle)) * (cannon.power / 10)
-              radius = 22
-              density = 1.0
-              restitution = 1.0
-              pos = cannon.pos
-              velocity = (velX, velY)
-              meta = BallObj
-              newBall = Just (BnB.bubble radius density restitution pos velocity meta)
+              adjustedPower = cannon.power / 10
+              newBall = Just (Phys.ball cannon.pos cannon.angle adjustedPower)
               newCannon = { cannon | power = 0 }
               newLevel = { level | cannon = newCannon }
               modelInMotion = { newModel | ball = newBall, level = newLevel }
@@ -420,25 +348,11 @@ update msg model =
       in
         (newModel, Cmd.none)
 
-itemsAreAtRest : Maybe (Bodies.Body a) -> List (Bodies.Body a) -> Bool
+itemsAreAtRest : Maybe Phys.Obj -> List Phys.Obj -> Bool
 itemsAreAtRest ball barriers =
   case ball of
-    Nothing ->
-      False
-    Just ball ->
-      (ball :: barriers)
-        |> everyItem (\b -> b.velocity == (0, 0))
-
-everyItem : (a -> Bool) -> List a -> Bool
-everyItem fn things =
-  case things of
-    thing :: rest ->
-      if fn thing then
-        everyItem fn rest
-      else
-        False
-    [] ->
-      True
+    Nothing -> False
+    Just ball -> Phys.isAtRest ball barriers
 
 advanceTransition : Model -> Model
 advanceTransition model =
@@ -503,7 +417,6 @@ evaluatePlay hasStopped model =
         let
           newBall = Nothing
           level = model.level
-          newBarriers = level.barriers |> List.map (\b -> { b | velocity = (0,0) })
           cannon = level.cannon
           (x1, y1) = ball.pos
           (tx, ty, tw, th) = level.target.pos
@@ -512,7 +425,7 @@ evaluatePlay hasStopped model =
           angle = (atan2 (y2 - y1) (x2 - x1)) * (360 / (pi * 2))
           newCannon = { cannon | pos = ball.pos, angle = angle }
           newScore = level.score + 1
-          newLevel = { level | cannon = newCannon, barriers = newBarriers, score = newScore }
+          newLevel = { level | cannon = newCannon, score = newScore }
         in
           { model
           | ball = newBall
@@ -521,7 +434,7 @@ evaluatePlay hasStopped model =
     _ ->
       model
 
-ballIsInTarget : Ball -> Target -> Bool
+ballIsInTarget : Phys.Obj -> Target -> Bool
 ballIsInTarget ball target =
   case ball.shape of
     Bodies.Bubble radius ->
@@ -545,15 +458,11 @@ advanceBall hasStopped model =
     case model.ball of
       Just ball ->
         let
+          (isOOB, newBall, newBarriers) = Phys.step ball level.barriers
           level = model.level
-          shapes = (ball :: model.bounds) ++ level.barriers
-          newShapes = BnB.step (0, 0) (0, 0) shapes
-            |> List.map reduceBodyVelocity
-          newBall = findFirst isBall newShapes
-          newBarriers = List.filter isBarrier newShapes
           newLevel = { level | barriers = newBarriers }
         in
-          { model | ball = newBall, level = newLevel }
+          { model | ball = Just newBall, level = newLevel }
       Nothing ->
         model
 
@@ -613,59 +522,11 @@ chargeCannon model =
         Nothing ->
           model
 
-reduceBodyVelocity : Bodies.Body meta -> Bodies.Body meta
-reduceBodyVelocity  bod =
-  let
-    newVelocity = reduceVelocity bod.velocity
-    newBod = { bod | velocity = newVelocity }
-  in
-    newBod
-
-reduceVelocity : (Float, Float) -> (Float, Float)
-reduceVelocity (xVel, yVel) =
-  let
-    speed = sqrt (xVel * xVel + yVel * yVel)
-    newSpeed = max 0.0 ((speed * 0.99) - 0.0075)
-    slowDown = newSpeed / speed
-    newXVel = xVel * slowDown
-    newYVel = yVel * slowDown
-  in
-    (if isNaN newXVel then 0 else newXVel, if isNaN newYVel then 0 else newYVel)
-
-isBall : Bodies.Body PhysObj -> Bool
-isBall body =
-  case body.meta of
-    BallObj -> True
-    _ -> False
-
-isBarrier : Bodies.Body PhysObj -> Bool
-isBarrier body =
-  case body.meta of
-    BarrierObj -> True
-    _ -> False
-
-isBound : Bodies.Body PhysObj -> Bool
-isBound body =
-  case body.meta of
-    BoundObj -> True
-    _ -> False
-
 delay : Time -> msg -> Cmd msg
 delay time msg =
   Process.sleep time
     |> Task.andThen (always (Task.succeed msg))
     |> Task.perform identity
-
-findFirst : (a -> Bool) -> List a -> Maybe a
-findFirst fn list =
-  case list of
-    a :: rest ->
-      if fn a then
-        Just a
-      else
-        findFirst fn rest
-    [] ->
-      Nothing
 
 keysPressedOn : Int -> Time -> KeysPressed -> KeysPressed
 keysPressedOn keyCode time keysPressed =
@@ -922,7 +783,7 @@ drawPath commands =
     [] ->
       ""
 
-drawBall : Maybe Ball -> Svg Msg
+drawBall : Maybe Phys.Obj -> Svg Msg
 drawBall ball =
   case ball of
     Just ball ->
@@ -976,11 +837,11 @@ drawPowerGauge power =
         , Svg.circle [attrCX -power, attrCY 0, SAttr.r "10", SAttr.class "gauge-dot"] []
         ]
 
-drawBarriers : List Barrier -> Svg Msg
+drawBarriers : List Phys.Obj -> Svg Msg
 drawBarriers barriers =
   Svg.g [] (List.map drawBarrier barriers)
 
-drawBarrier : Barrier -> Svg Msg
+drawBarrier : Phys.Obj -> Svg Msg
 drawBarrier barrier =
   case barrier.shape of
     Bodies.Bubble r ->
@@ -1004,37 +865,39 @@ drawBarrier barrier =
       in
         Svg.rect [xAttr, yAttr, widthAttr, heightAttr, classAttr] []
 
-attrX : Float -> Svg.Attribute Msg
+------------------------------
+
+attrX : number -> Svg.Attribute Msg
 attrX x = SAttr.x (toString x)
 
-attrY : Float -> Svg.Attribute Msg
+attrY : number -> Svg.Attribute Msg
 attrY y = SAttr.y (toString y)
 
-attrWidth : Float -> Svg.Attribute Msg
+attrWidth : number -> Svg.Attribute Msg
 attrWidth width = SAttr.width (toString width)
 
-attrHeight : Float -> Svg.Attribute Msg
+attrHeight : number -> Svg.Attribute Msg
 attrHeight height = SAttr.height (toString height)
 
-attrCX : Float -> Svg.Attribute Msg
+attrCX : number -> Svg.Attribute Msg
 attrCX cx = SAttr.cx (toString cx)
 
-attrCY : Float -> Svg.Attribute Msg
+attrCY : number -> Svg.Attribute Msg
 attrCY cy = SAttr.cy (toString cy)
 
-attrX1 : Float -> Svg.Attribute Msg
+attrX1 : number -> Svg.Attribute Msg
 attrX1 x1 = SAttr.x1 (toString x1)
 
-attrY1 : Float -> Svg.Attribute Msg
+attrY1 : number -> Svg.Attribute Msg
 attrY1 y1 = SAttr.y1 (toString y1)
 
-attrX2 : Float -> Svg.Attribute Msg
+attrX2 : number -> Svg.Attribute Msg
 attrX2 x2 = SAttr.x2 (toString x2)
 
-attrY2 : Float -> Svg.Attribute Msg
+attrY2 : number -> Svg.Attribute Msg
 attrY2 y2 = SAttr.y2 (toString y2)
 
-attrR : Float -> Svg.Attribute Msg
+attrR : number -> Svg.Attribute Msg
 attrR r = SAttr.r (toString r)
 
 attrClass : String -> Svg.Attribute Msg
