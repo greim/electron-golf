@@ -1,18 +1,20 @@
-module Transition exposing (Transition, Phase(..), step, getExplodingCompleteness)
+module Transition exposing (Transition, Phase(..), step, getExplodingCompleteness, new)
 
 type Phase
   = Exploding Int
   | Messaging Int
 
-type alias Transition a =
+type alias Transition =
   { message : String
   , explosionPoint : (Float, Float)
   , phase : Phase
-  , from : a
-  , to : a
   }
 
-step : Transition a -> Maybe (Transition a)
+new : String -> (Float, Float) -> Transition
+new message explosionPoint =
+  Transition message explosionPoint (Exploding 0)
+
+step : Transition -> Maybe (Transition)
 step tr =
   case tr.phase of
     Exploding i ->
@@ -26,7 +28,7 @@ step tr =
       else
         Nothing
 
-getExplodingCompleteness : Transition a -> Float
+getExplodingCompleteness : Transition -> Float
 getExplodingCompleteness tr =
   case tr.phase of
     Exploding step ->

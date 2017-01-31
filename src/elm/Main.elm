@@ -36,14 +36,19 @@ type alias Model =
   { viewport : Window.Size
   , playport : Window.Size
   , controlport : Window.Size
-  , level : Level
+  , phase : Phase
   , keysPressed : KeysPressed
   , ball : Maybe Phys.Obj
   , time : Time
   , remainingLevels : List Level
   , finishedLevels : List Level
-  , transition : Maybe (Transition Level)
   }
+
+type Phase
+  = Starting
+  | Playing Level
+  | Transitioning Transition
+  | Ending
 
 type alias Target =
   { pos : (Float, Float, Float, Float)
@@ -72,12 +77,18 @@ type alias Level =
   , barriers : List Phys.Obj
   , target : Target
   , par : Int
-  , score: Int
+  , score : Int
   }
 
 levels : List Level
 levels =
   [ Level
+    (Cannon (100, 100) 45 0)
+    []
+    (Target (200, 200, 150, 150))
+    1
+    0
+  , Level
     (Cannon (100, 900) 315 0)
     []
     (Target (450, 400, 150, 150))
@@ -251,22 +262,13 @@ init =
     viewport = Window.Size 0 0
     playport = Window.Size 0 0
     controlport = Window.Size 0 0
-
-    level = Level
-      (Cannon (100, 100) 45 0)
-      []
-      (Target (200, 200, 150, 150))
-      1
-      0
-
+    phase = Starting
     keysPressed = KeysPressed Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
     ball = Nothing
-    --bounds = BnB.bounds (900, 900) 1000 1.0 ( 500, 500 ) BarrierObj
     time = 0
     remainingLevels = levels
     finishedLevels = []
-    transition = Nothing
-    model = Model viewport playport controlport level keysPressed ball time remainingLevels finishedLevels transition
+    model = Model viewport playport controlport phase keysPressed ball time remainingLevels finishedLevels
     cmd = Task.perform Resize Window.size
   in
     (model, cmd)
@@ -280,25 +282,27 @@ type Msg
   | KeyDown Keyboard.KeyCode
   | KeyUp Keyboard.KeyCode
   | Frame Time
-  | Skip
+  | Start
+  --| Skip
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
   case msg of
 
-    Skip ->
-      case model.remainingLevels of
-        newLevel :: newRemainingLevels ->
-          let
-            newFinishedLevels = model.level :: model.finishedLevels
-            newModel = { model | level = newLevel, remainingLevels = newRemainingLevels, finishedLevels = newFinishedLevels }
-          in
-            (newModel, Cmd.none)
-        [] ->
-          (model, Cmd.none)
-
     NoOp ->
       (model, Cmd.none)
+
+    Start ->
+      case model.phase of
+        Starting ->
+          case model.remainingLevels of
+            level :: newRemainingLevels ->
+              let newModel = { model | phase = Playing level, remainingLevels = newRemainingLevels }
+              in (newModel, Cmd.none)
+            [] ->
+              (model, Cmd.none)
+        _ ->
+          (model, Cmd.none)
 
     Resize newViewport ->
       let
@@ -321,16 +325,15 @@ update msg model =
         newKeysPressed = keysPressedOff keyCode model.time model.keysPressed
         newModel = { model | keysPressed = newKeysPressed }
       in
-        case (model.ball, keyCode) of
-          (Nothing, 32) ->
+        case (model.ball, model.phase, keyCode) of
+          (Nothing, Playing level, 32) ->
             let
-              level = model.level
               cannon = level.cannon
               adjustedPower = cannon.power / 10
               newBall = Just (Phys.ball cannon.pos cannon.angle adjustedPower)
               newCannon = { cannon | power = 0 }
               newLevel = { level | cannon = newCannon }
-              modelInMotion = { newModel | ball = newBall, level = newLevel }
+              modelInMotion = { newModel | ball = newBall, phase = Playing newLevel }
             in
               (modelInMotion, Cmd.none)
           _ ->
@@ -338,97 +341,73 @@ update msg model =
 
     Frame time ->
       let
-        hasStopped = case model.ball of
-          Just ball -> Phys.isAtRest ball model.level.barriers
-          Nothing -> False
-        newModel = { model | time = model.time + time }
-          |> advanceBall hasStopped
-          |> rotateCannon
-          |> chargeCannon
-          |> evaluatePlay hasStopped
-          |> advanceTransition
+        tickModel = { model | time = model.time + time }
       in
-        (newModel, Cmd.none)
-
-advanceTransition : Model -> Model
-advanceTransition model =
-  case model.transition of
-    Just transition ->
-      let
-        newTransition = Transition.step transition
-      in
-        { model | transition = newTransition }
-    Nothing ->
-      model
-
-evaluatePlay : Bool -> Model -> Model
-evaluatePlay hasStopped model =
-  case (hasStopped, model.ball) of
-    (True, Just ball) ->
-      if ballIsInTarget ball model.level.target then
-        case model.remainingLevels of
-          newLevel :: newRemainingLevels ->
-            -- remove ball from play
-            -- pop level from remaining levels
-            -- push level onto finished levels
-            -- increment score
-            -- update level
-            -- create a transition
+        case model.phase of
+          Starting ->
+            (tickModel, Cmd.none)
+          Playing level ->
             let
-              lastLevel = model.level
-              newLastLevel = { lastLevel | score = lastLevel.score + 1 }
-              newFinishedLevels = newLastLevel :: model.finishedLevels
-              newBall = Nothing
-              explosionPoint = ball.pos
-              parDiff = newLastLevel.score - newLastLevel.par
-              message = if parDiff == -2 then
-                "O.o"
-              else if parDiff == -1 then
-                "WOW!"
-              else if parDiff == 0 then
-                "Nice."
-              else
-                "Okay!"
-              newTransition = Transition
-                message
-                explosionPoint
-                (Transition.Exploding 0)
-                lastLevel
-                newLevel
+              newModel = tickModel
+                |> rotateCannon level
+                |> chargeCannon level
+                |> advanceBall level
             in
-              { model
-              | ball = newBall
-              , remainingLevels = newRemainingLevels
-              , finishedLevels = newFinishedLevels
-              , level = newLevel
-              , transition = Just newTransition
-              }
-          [] ->
-            { model | ball = Nothing }
-      else
-        -- remove ball from play
-        -- increment score
-        -- move cannon
-        -- halt floating barriers
-        let
-          newBall = Nothing
-          level = model.level
-          cannon = level.cannon
-          (x1, y1) = ball.pos
-          (tx, ty, tw, th) = level.target.pos
-          x2 = tx + (tw / 2)
-          y2 = ty + (th / 2)
-          angle = (atan2 (y2 - y1) (x2 - x1)) * (360 / (pi * 2))
-          newCannon = { cannon | pos = ball.pos, angle = angle }
-          newScore = level.score + 1
-          newLevel = { level | cannon = newCannon, score = newScore }
-        in
-          { model
-          | ball = newBall
-          , level = newLevel
-          }
-    _ ->
-      model
+              (newModel, Cmd.none)
+          Transitioning tr ->
+            let
+              newModel = advanceTransition tr tickModel
+            in
+              (newModel, Cmd.none)
+          Ending ->
+            (tickModel, Cmd.none)
+
+advanceTransition : Transition -> Model -> Model
+advanceTransition transition model =
+  case Transition.step transition of
+    Just tr ->
+      { model | phase = Transitioning tr }
+    Nothing ->
+      case model.remainingLevels of
+        level :: newRemainingLevels ->
+          { model | phase = Playing level, remainingLevels = newRemainingLevels }
+        [] ->
+          { model | phase = Ending }
+
+evaluatePlay : Phys.Obj -> Level -> Model -> Model
+evaluatePlay ball level model =
+  if ballIsInTarget ball level.target then
+    let
+      finishedLevel = { level | score = level.score + 1 }
+      newFinishedLevels = finishedLevel :: model.finishedLevels
+      explosionPoint = ball.pos
+      parDiff = finishedLevel.score - finishedLevel.par
+      message = if parDiff == -2 then "O.o"
+      else if parDiff == -1 then "WOW!"
+      else if parDiff == 0 then "Nice."
+      else "Okay!"
+      trans = Transition.new message explosionPoint
+    in
+      { model
+      | ball = Nothing
+      , finishedLevels = newFinishedLevels
+      , phase = Transitioning trans
+      }
+  else
+    let
+      -- move and re-orient cannon
+      cannon = level.cannon
+      (x1, y1) = ball.pos
+      (tx, ty, tw, th) = level.target.pos
+      x2 = tx + (tw / 2)
+      y2 = ty + (th / 2)
+      angle = (atan2 (y2 - y1) (x2 - x1)) * (360 / (pi * 2))
+      newCannon = { cannon | pos = ball.pos, angle = angle }
+      -- increment score
+      newScore = level.score + 1
+      newLevel = { level | cannon = newCannon, score = newScore }
+    in
+      { model | ball = Nothing, phase = Playing newLevel }
 
 ballIsInTarget : Phys.Obj -> Target -> Bool
 ballIsInTarget ball target =
@@ -446,30 +425,29 @@ ballIsInTarget ball target =
     Bodies.Box ext ->
       False
 
-advanceBall : Bool -> Model -> Model
-advanceBall hasStopped model =
-  if hasStopped then
-    model
-  else
-    case model.ball of
-      Just ball ->
-        let
-          (isOOB, newBall, newBarriers) = Phys.step ball level.barriers
-          level = model.level
-          newLevel = { level | barriers = newBarriers }
-        in
-          { model | ball = Just newBall, level = newLevel }
-      Nothing ->
-        model
+advanceBall : Level -> Model -> Model
+advanceBall level model =
+  case model.ball of
+    Just ball ->
+      let
+        (isAtRest, isOOB, newBall, newBarriers) = Phys.step ball level.barriers
+        newLevel = { level | barriers = newBarriers }
+        maybeNewBall = if isAtRest then Nothing else Just newBall
+      in
+        if isAtRest then
+          evaluatePlay ball newLevel model
+        else
+          { model | ball = Just newBall, phase = Playing newLevel }
+    Nothing ->
+      model
 
-rotateCannon : Model -> Model
-rotateCannon model =
+rotateCannon : Level -> Model -> Model
+rotateCannon level model =
   let
     keysPressed = model.keysPressed
     isFine = not (keysPressed.shift == Nothing)
     isCoarse = not (keysPressed.alt == Nothing)
     now = model.time
-    level = model.level
     newCannon = case (keysPressed.left, keysPressed.right) of
       (Just pressTime, Nothing) ->
         rotateCannonBy True isFine isCoarse (now - pressTime) level.cannon
@@ -478,7 +456,7 @@ rotateCannon model =
       _ -> level.cannon
     newLevel = { level | cannon = newCannon }
   in
-    { model | level = newLevel }
+    { model | phase = Playing newLevel }
 
 rotateCannonBy : Bool -> Bool -> Bool -> Float -> Cannon -> Cannon
 rotateCannonBy isLeft isFine isCoarse speed cannon =
@@ -493,8 +471,8 @@ rotateCannonBy isLeft isFine isCoarse speed cannon =
   in
     { cannon | angle = newAngle }
 
-chargeCannon : Model -> Model
-chargeCannon model =
+chargeCannon : Level -> Model -> Model
+chargeCannon level model =
   case model.ball of
     Just ball ->
       model
@@ -503,7 +481,6 @@ chargeCannon model =
         Just pressTime ->
           let
             pressDuration = model.time - pressTime
-            level = model.level
             cannon = level.cannon
             isFine = not (model.keysPressed.shift == Nothing)
             incr = pressDuration
@@ -514,7 +491,7 @@ chargeCannon model =
             newCannon = { cannon | power = newPower }
             newLevel = { level | cannon = newCannon }
           in
-            { model | level = newLevel }
+            { model | phase = Playing newLevel }
         Nothing ->
           model
 
@@ -577,19 +554,38 @@ view model =
     heightStr = toString model.playport.height
     widthPx = widthStr ++ "px"
     heightPx = heightStr ++ "px"
-    attempts = toString model.level.score
+    attempts = case model.phase of
+      Playing level -> toString level.score
+      _ ->
+        case model.finishedLevels of
+          level :: others -> toString level.score
+          [] -> "-"
     finCount = List.length model.finishedLevels
     remCount = List.length model.remainingLevels
-    level = toString (finCount + 1)
-    totalLevels = toString (finCount + remCount + 1)
+    levelCount = case model.phase of
+      Playing level -> finCount + remCount + 1
+      _ -> finCount + remCount
+    currentLevel = case model.phase of
+      Playing level -> finCount + 1
+      _ -> finCount
     futurePar = List.foldl (\lvl tally -> tally + lvl.par) 0 model.remainingLevels
     parSoFar = List.foldl (\lvl tally -> tally + lvl.par) 0 model.finishedLevels
-    prevTotal = List.foldl (\lvl tally -> tally + lvl.score) 0 model.finishedLevels
-    total = prevTotal + model.level.score
-    totalAttempts = toString total
-    parCompare = prevTotal - parSoFar
-    totalPar = futurePar + parSoFar + model.level.par
+    prevTotalScore = List.foldl (\lvl tally -> tally + lvl.score) 0 model.finishedLevels
+    totalScore = case model.phase of
+      Playing level -> prevTotalScore + level.score
+      _ -> prevTotalScore
+    totalAttempts = toString totalScore
+    parCompare = prevTotalScore - parSoFar
+    totalPar = case model.phase of
+      Playing level -> futurePar + parSoFar + level.par
+      _ -> futurePar + parSoFar
     parCompareStr = if parCompare < 0 then toString parCompare else "+" ++ (toString parCompare)
+    levelPar = case model.phase of
+      Playing level -> toString level.par
+      _ ->
+        case model.finishedLevels of
+          level :: others -> toString level.par
+          [] -> "-"
   in
     Html.div []
       [ Svg.svg
@@ -600,12 +596,11 @@ view model =
         [ defs
         , Svg.rect [attrX 50, attrY 50, attrWidth 900, attrHeight 900, SAttr.class "boundary"] []
         --, drawBarriers model.bounds
-        , drawBarriers model.level.barriers
-        , drawTarget model.level.target
-        , drawCannon model.level.cannon
+        , drawBarriers model
+        , drawTarget model
+        , drawCannon model
         , drawBall model.ball
-        , Svg.text_ [attrX 954, attrY 980, SAttr.class "par-label"] [Svg.text ("par = " ++ (toString model.level.par))]
-        , drawTransition model.transition
+        , drawTransition model.phase
         ]
       , Html.div
         [ HAttr.id "controls"
@@ -627,15 +622,15 @@ view model =
             , Html.div [HAttr.class "tile-value"]
               [ Html.text attempts
               , Html.span [HAttr.class "slash"] [Html.text "/"]
-              , Html.text (toString model.level.par)
+              , Html.text levelPar
               ]
             ]
           , Html.div [HAttr.class "tile"]
             [ Html.div [HAttr.class "tile-label"] [Html.text "Level"]
             , Html.div [HAttr.class "tile-value"]
-              [ Html.text level
+              [ Html.text (toString currentLevel)
               , Html.span [HAttr.class "slash"] [Html.text "/"]
-              , Html.text totalLevels
+              , Html.text (toString levelCount)
               ]
             ]
           , Html.div [HAttr.class "tile"]
@@ -662,7 +657,7 @@ view model =
             , Html.text "SHIFT while pressing SPACEBAR."
             ]
           ]
-        , Html.button [HEv.onClick Skip] [Html.text "skip"]
+        , Html.button [HEv.onClick Start] [Html.text "Start"]
         ]
       ]
 
@@ -680,36 +675,49 @@ transitionBlankout : Svg Msg
 transitionBlankout =
   Svg.rect [attrX 51, attrY 51, attrWidth 898, attrHeight 898, attrClass "transition-blankout"] []
 
-drawTransition : Maybe (Transition Level) -> Svg Msg
-drawTransition transition =
-  case transition of
-    Nothing ->
+drawTransition : Phase -> Svg Msg
+drawTransition phase =
+  case phase of
+    Transitioning trans ->
+      drawTheTransition trans
+    _ ->
       Svg.g [] []
-    Just transition ->
-      case transition.phase of
-        Transition.Exploding step ->
-          let
-            (cx, cy) = transition.explosionPoint
-            r = toFloat step
-            opac = 1.0 - Transition.getExplodingCompleteness transition
-            style = "opacity:" ++ (toString opac)
-          in
-            Svg.g []
-              [ transitionBlankout
-              , Svg.circle [attrCX cx, attrCY cy, attrR r, SAttr.style style, attrClass "transition-explosion"] []
-              ]
-        Transition.Messaging step ->
-          Svg.g []
-            [ transitionBlankout
-            , Svg.text_ [attrX 500, attrY 500, attrClass "transition-message"] [Svg.text transition.message]
-            ]
+
+drawTheTransition : Transition -> Svg Msg
+drawTheTransition transition =
+  case transition.phase of
+    Transition.Exploding step ->
+      let
+        (cx, cy) = transition.explosionPoint
+        r = toFloat step
+        opac = 1.0 - Transition.getExplodingCompleteness transition
+        style = "opacity:" ++ (toString opac)
+      in
+        Svg.g []
+          [ transitionBlankout
+          , Svg.circle [attrCX cx, attrCY cy, attrR r, SAttr.style style, attrClass "transition-explosion"] []
+          ]
+    Transition.Messaging step ->
+      Svg.g []
+        [ transitionBlankout
+        , Svg.text_ [attrX 500, attrY 500, attrClass "transition-message"] [Svg.text transition.message]
+        ]
 
 drawViewBox : Int -> Int -> Int -> Int -> String
 drawViewBox x y width height =
   (toString x) ++ " " ++ (toString y) ++ " " ++ (toString width) ++ " " ++ (toString height)
 
-drawTarget : Target -> Svg Msg
-drawTarget target =
+drawTarget : Model -> Svg Msg
+drawTarget model =
+  case model.phase of
+    Playing level -> drawTheTarget level.target
+    _ ->
+      case model.finishedLevels of
+        level :: others -> drawTheTarget level.target
+        [] -> Svg.g [] []
+
+drawTheTarget : Target -> Svg Msg
+drawTheTarget target =
   let
     (x, y, width, height) = target.pos
     translate = "translate(" ++ (toString x) ++ " " ++ (toString y) ++ ")"
@@ -798,8 +806,14 @@ drawBall ball =
     Nothing ->
       Svg.g [] []
 
-drawCannon : Cannon -> Svg Msg
-drawCannon cannon =
+drawCannon : Model -> Svg Msg
+drawCannon model =
+  case model.phase of
+    Playing level -> drawTheCannon level.cannon
+    _ -> Svg.g [] []
+
+drawTheCannon : Cannon -> Svg Msg
+drawTheCannon cannon =
   let
     (x, y) = cannon.pos
     classAttr = SAttr.class "cannon"
@@ -833,9 +847,11 @@ drawPowerGauge power =
         , Svg.circle [attrCX -power, attrCY 0, SAttr.r "10", SAttr.class "gauge-dot"] []
         ]
 
-drawBarriers : List Phys.Obj -> Svg Msg
-drawBarriers barriers =
-  Svg.g [] (List.map drawBarrier barriers)
+drawBarriers : Model -> Svg Msg
+drawBarriers model =
+  case model.phase of
+    Playing level -> Svg.g [] (List.map drawBarrier level.barriers)
+    _ -> Svg.g [] []
 
 drawBarrier : Phys.Obj -> Svg Msg
 drawBarrier barrier =

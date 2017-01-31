@@ -97,7 +97,7 @@ bubbleBarrier : Float -> Float -> Float -> Obj
 bubbleBarrier cx cy radius =
   bubble radius infiniteDensity normalRestitution (cx, cy) zeroVelocity Barrier
 
-step : Obj -> List Obj -> (Bool, Obj, List Obj)
+step : Obj -> List Obj -> (Bool, Bool, Obj, List Obj)
 step ball barriers =
   let
     bodies = ball :: (barriers ++ bounds)
@@ -108,8 +108,9 @@ step ball barriers =
     (x, y) = newBall.pos
     (xLo, yLo, xHi, yHi) = boundVals
     isOOB = x <= xLo || x >= xHi || y <= yLo || y >= yHi
+    atRest = isAtRest ball barriers
   in
-    (isOOB, newBall, newBarriers)
+    (atRest, isOOB, newBall, newBarriers)
 
 isAtRest : Obj -> List Obj -> Bool
 isAtRest ball barriers =
