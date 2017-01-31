@@ -711,6 +711,7 @@ drawTarget : Model -> Svg Msg
 drawTarget model =
   case model.phase of
     Playing level -> drawTheTarget level.target
+    Ending -> Svg.g [] []
     _ ->
       case model.finishedLevels of
         level :: others -> drawTheTarget level.target
