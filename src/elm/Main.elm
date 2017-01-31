@@ -550,10 +550,6 @@ subscriptions model =
 view : Model -> Html Msg
 view model =
   let
-    widthStr = toString model.playport.width
-    heightStr = toString model.playport.height
-    widthPx = widthStr ++ "px"
-    heightPx = heightStr ++ "px"
     attempts = case model.phase of
       Playing level -> toString level.score
       _ ->
@@ -589,19 +585,18 @@ view model =
   in
     Html.div []
       [ Svg.svg
-        [ SAttr.viewBox "0 0 1000 1000"
-        , SAttr.width widthPx
-        , SAttr.height heightPx
+        [ attrViewBox 0 0 Phys.areaWidth Phys.areaHeight
+        , attrWidth model.playport.width
+        , attrHeight model.playport.height
         ]
-        [ defs
-        , Svg.rect [attrX 50, attrY 50, attrWidth 900, attrHeight 900, SAttr.class "boundary"] []
-        --, drawBarriers model.bounds
+        [ boundary
         , drawBarriers model
         , drawTarget model
         , drawCannon model
         , drawBall model.ball
         , drawTransition model.phase
         ]
+      , drawSplash model
       , Html.div
         [ HAttr.id "controls"
         , HAttr.style [("width", (toString model.controlport.width) ++ "px"), ("left", (toString model.playport.width) ++ "px")]
@@ -638,9 +633,34 @@ view model =
             , Html.div [HAttr.class "tile-value"] [Html.text (toString totalPar)]
             ]
           ]
-        , Html.h1 [] [Html.text "Electron Golf"]
-        , Html.div [HAttr.class "directions"]
-          [ Html.p []
+        ]
+      ]
+
+boundary : Svg Msg
+boundary =
+  Svg.rect
+   [ attrX Phys.gutter
+   , attrY Phys.gutter
+   , attrWidth Phys.playableWidth
+   , attrHeight Phys.playableHeight
+   , SAttr.class "boundary"
+   ] []
+
+drawSplash : Model -> Html Msg
+drawSplash model =
+  case model.phase of
+    Starting ->
+      Html.div
+        [ HAttr.id "splash"
+        , HAttr.style
+          [ ("width", (toString model.playport.width) ++ "px")
+          , ("height", (toString model.playport.height) ++ "px")
+          , ("font-size", (toString (model.playport.width // 100)) ++ "px")
+          ]
+        ]
+        [ Html.div [HAttr.id "splash-inner"]
+          [ Html.h1 [] [Html.text "Electron Golf"]
+          , Html.p []
             [ Html.strong [] [Html.text "Goal: "]
             , Html.text "Fire the electron cannon at the proton held in the target frame. Under highly stable conditions, the electron will be absorbed! Achieve this in as few shots as possible; lower scores are better."
             ]
@@ -656,20 +676,11 @@ view model =
             [ Html.strong [] [Html.text "Putt: "]
             , Html.text "SHIFT while pressing SPACEBAR."
             ]
+            , Html.button [HEv.onClick Start] [Html.text "Start"]
           ]
-        , Html.button [HEv.onClick Start] [Html.text "Start"]
         ]
-      ]
-
-defs : Svg Msg
-defs =
-  Svg.defs []
-    [ Svg.clipPath
-      [ SAttr.id "gutter-clip"
-      ]
-      [ Svg.rect [attrX 50, attrY 50, attrWidth 900, attrHeight 900] []
-      ]
-    ]
+    _ ->
+      Html.div [] []
 
 transitionBlankout : Svg Msg
 transitionBlankout =
@@ -915,3 +926,7 @@ attrR r = SAttr.r (toString r)
 
 attrClass : String -> Svg.Attribute Msg
 attrClass cls = SAttr.class cls
+
+attrViewBox : number -> number -> number -> number -> Svg.Attribute Msg
+attrViewBox x y w h =
+  SAttr.viewBox ((toString x) ++ " " ++ (toString y) ++ " " ++ (toString w) ++ " " ++ (toString h))

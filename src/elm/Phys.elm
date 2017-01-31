@@ -9,9 +9,13 @@ module Phys exposing
   , boxBarrier
   , bouncyBarrier
   , bubbleBarrier
-  , bounds
   , isAtRest
   , step
+  , areaWidth
+  , areaHeight
+  , playableWidth
+  , playableHeight
+  , gutter
   )
 
 -- imports ---------------------------------------------------------------------
@@ -40,12 +44,16 @@ gutter = 50
 boundVals : (Float, Float, Float, Float)
 boundVals = (gutter, gutter, areaWidth - gutter, areaHeight - gutter)
 
+playableWidth : Float
+playableWidth = areaWidth - (gutter * 2)
+
+playableHeight : Float
+playableHeight = areaHeight - (gutter * 2)
+
 bounds : List Obj
 bounds =
   let
     (xLo, yLo, xHi, yHi) = boundVals
-    playableWidth = areaWidth - (gutter * 2)
-    playableHeight = areaHeight - (gutter * 2)
   in
     List.map (\b -> { b | meta = Bound })
       [ boxBarrier 0 0 (gutter - 1) (gutter - 1)
