@@ -338,7 +338,9 @@ update msg model =
 
     Frame time ->
       let
-        hasStopped = itemsAreAtRest model.ball model.level.barriers
+        hasStopped = case model.ball of
+          Just ball -> Phys.isAtRest ball model.level.barriers
+          Nothing -> False
         newModel = { model | time = model.time + time }
           |> advanceBall hasStopped
           |> rotateCannon
@@ -347,12 +349,6 @@ update msg model =
           |> advanceTransition
       in
         (newModel, Cmd.none)
-
-itemsAreAtRest : Maybe Phys.Obj -> List Phys.Obj -> Bool
-itemsAreAtRest ball barriers =
-  case ball of
-    Nothing -> False
-    Just ball -> Phys.isAtRest ball barriers
 
 advanceTransition : Model -> Model
 advanceTransition model =
