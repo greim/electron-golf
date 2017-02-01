@@ -149,7 +149,7 @@ rect.transition-blankout {
 
 circle.transition-explosion {
   fill: transparent;
-  stroke: #fff;
+  stroke: #0f0;
   stroke-width: 20px;
 }
 
@@ -221,7 +221,7 @@ text.par-label {
     stroke-linejoin: round;
   }
   circle {
-    fill: rgba(255,255,255,0.15);
+    fill: rgba(0,0,0,0.25);
     stroke: #fff;
     stroke-width: 1px;
     opacity: .25;

@@ -1,3 +1,7 @@
+
+-- import ----------------------------------------------------------------------
+
+--import Debug exposing (log)
 import Html exposing (Html)
 import Html.Attributes as HAttr
 import Html.Events as HEv
@@ -12,13 +16,15 @@ import AnimationFrame
 import BoxesAndBubbles.Bodies as Bodies
 import Transition exposing (Transition)
 import Phys
---import Json.Decode as Json
---import Set exposing (Set)
---import V
---import History exposing (History)
---import Dom
+import KeysPressed exposing (KeysPressed)
+import Target exposing (Target)
+import Level exposing (Level, allLevels)
+import Cannon exposing (Cannon)
+import Phase exposing (..)
+import View exposing (..)
+import Ease
 
---import Debug exposing (log)
+-- main ------------------------------------------------------------------------
 
 main : Program Never Model Msg
 main =
@@ -30,7 +36,7 @@ main =
     }
 
 
--- MODEL ############################################################################
+-- model -----------------------------------------------------------------------
 
 type alias Model =
   { viewport : Window.Size
@@ -44,217 +50,12 @@ type alias Model =
   , finishedLevels : List Level
   }
 
-type Phase
-  = Starting
-  | Playing Level
-  | Transitioning Transition
-  | Ending
-
-type alias Target =
-  { pos : (Float, Float, Float, Float)
-  }
-
-type alias Cannon =
-  { pos : (Float, Float)
-  , angle : Float
-  , power : Float
-  }
-
-type alias KeysPressed =
-  { shift: Maybe Time
-  , alt: Maybe Time
-  , meta: Maybe Time
-  , space: Maybe Time
-  , ctrl: Maybe Time
-  , left: Maybe Time
-  , right: Maybe Time
-  , up: Maybe Time
-  , down: Maybe Time
-  }
-
-type alias Level =
-  { cannon : Cannon
-  , barriers : List Phys.Obj
-  , target : Target
-  , par : Int
-  , score : Int
-  }
-
-levels : List Level
-levels =
-  [ Level
-    (Cannon (100, 100) 45 0)
-    []
-    (Target (200, 200, 150, 150))
-    1
-    0
-  , Level
-    (Cannon (100, 900) 315 0)
-    []
-    (Target (450, 400, 150, 150))
-    1
-    0
-  , Level
-    (Cannon (900, 900) 225 0)
-    []
-    (Target (100, 100, 150, 150))
-    1
-    0
-  , Level
-    (Cannon (100, 100) 65 0)
-    [ Phys.vertBarrier 500 50 600
-    ]
-    (Target (750, 100, 150, 150))
-    1
-    0
-  , Level
-    (Cannon (880, 450) 202 0)
-    [ Phys.horizBarrier 50 500 349
-    , Phys.horizBarrier 601 500 349
-    , Phys.bubbleBarrier 410 500 10
-    , Phys.bubbleBarrier 590 500 10
-    , Phys.bubbleBarrier 500 200 100
-    ]
-    (Target (800, 800, 100, 100))
-    2
-    0
-  , Level
-    (Cannon (880, 850) 255 0)
-    [ Phys.vertBarrier 333 51 666
-    , Phys.vertBarrier 666 332 618
-    ]
-    (Target (100, 150, 100, 100))
-    2
-    0
-  , Level
-    (Cannon (500, 800) 270 0)
-    [ Phys.horizBarrier 200 333 600
-    , Phys.horizBarrier 200 666 600
-    ]
-    (Target (450, 140, 100, 100))
-    2
-    0
-  , Level
-    (Cannon (900, 900) 270 0)
-    [ Phys.vertBarrier 850 230 720
-    , Phys.bubbleBarrier 900 100 25
-    ]
-    (Target (690, 800, 100, 100))
-    2
-    0
-  , Level
-    (Cannon (900, 100) 135 0)
-    [ Phys.horizBarrier 220 200 580
-    , Phys.vertBarrier 800 200 580
-    , Phys.bubbleBarrier 198 200 20
-    , Phys.bubbleBarrier 800 802 20
-    ]
-    (Target (600, 300, 100, 100))
-    2
-    0
-  , Level
-    (Cannon (100, 500) 0 0)
-    [ Phys.horizBarrier 200 199 600
-    , Phys.horizBarrier 200 801 600
-    , Phys.vertBarrier 200 200 600
-    , Phys.vertBarrier 800 200 230
-    , Phys.vertBarrier 800 570 230
-    ]
-    (Target (450, 450, 100, 100))
-    3
-    0
-  , Level
-    (Cannon (500, 500) 135 0)
-    [ Phys.horizBarrier 200 199 600
-    , Phys.horizBarrier 51 801 750
-    , Phys.vertBarrier 800 200 600
-    , Phys.vertBarrier 200 200 200
-    ]
-    (Target (75, 825, 100, 100))
-    3
-    0
-  , Level
-    (Cannon (500, 100) 90 0)
-    [ Phys.horizBarrier 50 250 375
-    , Phys.horizBarrier 575 250 375
-    , Phys.horizBarrier 150 500 700
-    , Phys.horizBarrier 50 750 375
-    , Phys.horizBarrier 575 750 375
-    ]
-    (Target (800, 800, 100, 100))
-    3
-    0
-  , Level
-    (Cannon (100, 500) 0 0)
-    [ Phys.bubbleBarrier 500 500 210
-    , Phys.bubbleBarrier 250 250 100
-    , Phys.bubbleBarrier 250 750 100
-    , Phys.bubbleBarrier 750 250 100
-    , Phys.bubbleBarrier 750 750 100
-    ]
-    (Target (800, 450, 100, 100))
-    3
-    0
-  , Level
-    (Cannon (170, 170) 45 0)
-    [ Phys.bubbleBarrier 500 500 400
-    ]
-    (Target (800, 800, 100, 100))
-    3
-    0
-  , Level
-    (Cannon (150, 150) 0 0)
-    [ Phys.horizBarrier 500 500 450
-    , Phys.horizBarrier 50 300 450
-    , Phys.horizBarrier 50 700 450
-    , Phys.bubbleBarrier 250 500 125
-    , Phys.bubbleBarrier 750 275 125
-    , Phys.bubbleBarrier 750 725 125
-    ]
-    (Target (100, 800, 100, 100))
-    3
-    0
-  , Level
-    (Cannon (500, 900) 270 0)
-    [ Phys.horizBarrier 51 400 222
-    , Phys.bouncyBarrier 387 400 111 0.01
-    , Phys.bouncyBarrier 613 400 111 0.01
-    , Phys.horizBarrier 725 400 222
-    ]
-    (Target (450, 100, 100, 100))
-    2
-    0
-  , Level
-    (Cannon (100, 100) 45 0)
-    [ Phys.bouncyBarrier 500 500 400 0.01
-    , Phys.bouncyBarrier 150 850 60 1.0
-    , Phys.bouncyBarrier 850 150 60 1.0
-    ]
-    (Target (800, 800, 100, 100))
-    3
-    0
-  , Level
-    (Cannon (100, 900) 315 0)
-    [ Phys.bouncyBarrier 150 330 70 0.02
-    , Phys.bouncyBarrier 325 330 70 0.02
-    , Phys.bouncyBarrier 500 330 70 0.02
-    , Phys.bouncyBarrier 675 330 70 0.02
-    , Phys.bouncyBarrier 850 330 70 0.02
-    , Phys.bouncyBarrier 150 500 70 0.02
-    , Phys.bouncyBarrier 325 500 70 0.02
-    , Phys.bouncyBarrier 500 500 70 0.02
-    , Phys.bouncyBarrier 675 500 70 0.02
-    , Phys.bouncyBarrier 850 500 70 0.02
-    , Phys.bouncyBarrier 150 670 70 0.02
-    , Phys.bouncyBarrier 325 670 70 0.02
-    , Phys.bouncyBarrier 500 670 70 0.02
-    , Phys.bouncyBarrier 675 670 70 0.02
-    , Phys.bouncyBarrier 850 670 70 0.02
-    ]
-    (Target (800, 100, 100, 100))
-    2
-    0
-  ]
+type PathCommand
+  = M Float Float
+  | L Float Float
+  | H Float
+  | V Float
+  | Z
 
 init : (Model, Cmd Msg)
 init =
@@ -263,10 +64,10 @@ init =
     playport = Window.Size 0 0
     controlport = Window.Size 0 0
     phase = Starting
-    keysPressed = KeysPressed Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
+    keysPressed = KeysPressed.init
     ball = Nothing
     time = 0
-    remainingLevels = levels
+    remainingLevels = allLevels
     finishedLevels = []
     model = Model viewport playport controlport phase keysPressed ball time remainingLevels finishedLevels
     cmd = Task.perform Resize Window.size
@@ -274,7 +75,7 @@ init =
     (model, cmd)
 
 
--- UPDATE ###########################################################################
+-- update ----------------------------------------------------------------------
 
 type Msg
   = NoOp
@@ -283,7 +84,6 @@ type Msg
   | KeyUp Keyboard.KeyCode
   | Frame Time
   | Start
-  --| Skip
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
@@ -293,15 +93,17 @@ update msg model =
       (model, Cmd.none)
 
     Start ->
-      case model.phase of
-        Starting ->
-          case model.remainingLevels of
-            level :: newRemainingLevels ->
-              let newModel = { model | phase = Playing level, remainingLevels = newRemainingLevels }
-              in (newModel, Cmd.none)
-            [] ->
-              (model, Cmd.none)
-        _ ->
+      case allLevels of
+        level :: remainingLevels ->
+          let
+            newModel = { model
+              | remainingLevels = remainingLevels
+              , finishedLevels = []
+              , phase = Playing level
+              }
+          in
+            (newModel, Cmd.none)
+        [] ->
           (model, Cmd.none)
 
     Resize newViewport ->
@@ -354,9 +156,9 @@ update msg model =
                 |> advanceBall level
             in
               (newModel, Cmd.none)
-          Transitioning tr ->
+          Transitioning trans ->
             let
-              newModel = advanceTransition tr tickModel
+              newModel = advanceTransition trans tickModel
             in
               (newModel, Cmd.none)
           Ending ->
@@ -380,13 +182,13 @@ evaluatePlay ball level model =
     let
       finishedLevel = { level | score = level.score + 1 }
       newFinishedLevels = finishedLevel :: model.finishedLevels
-      explosionPoint = ball.pos
+      actionPoint = ball.pos
       parDiff = finishedLevel.score - finishedLevel.par
       message = if parDiff == -2 then "O.o"
       else if parDiff == -1 then "WOW!"
       else if parDiff == 0 then "Nice."
       else "Okay!"
-      trans = Transition.new message explosionPoint
+      trans = Transition.successful message ball.pos
     in
       { model
       | ball = Nothing
@@ -436,6 +238,14 @@ advanceBall level model =
       in
         if isAtRest then
           evaluatePlay ball newLevel model
+        else if isOOB then
+          let
+            endedLevel = { level | score = level.score + 3 }
+            newFinishedLevels = endedLevel :: model.finishedLevels
+            trans = Transition.unsuccessful "Out of bounds. +3" ball.pos
+            newPhase = Transitioning trans
+          in
+            { model | ball = Nothing, phase = newPhase, finishedLevels = newFinishedLevels }
         else
           { model | ball = Just newBall, phase = Playing newLevel }
     Nothing ->
@@ -533,7 +343,7 @@ updateKeyPressed isOn maybeExistingTime newTime =
       Nothing -> Just newTime
 
 
--- SUBSCRIPTIONS ####################################################################
+-- subscriptions ---------------------------------------------------------------
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
@@ -545,7 +355,7 @@ subscriptions model =
     ]
 
 
--- VIEW #############################################################################
+-- view ------------------------------------------------------------------------
 
 view : Model -> Html Msg
 view model =
@@ -584,17 +394,13 @@ view model =
           [] -> "-"
   in
     Html.div []
-      [ Svg.svg
-        [ attrViewBox 0 0 Phys.areaWidth Phys.areaHeight
-        , attrWidth model.playport.width
-        , attrHeight model.playport.height
-        ]
+      [ playingFieldWrapper model.playport.width model.playport.height
         [ boundary
         , drawBarriers model
         , drawTarget model
         , drawCannon model
         , drawBall model.ball
-        , drawTransition model.phase
+        , drawTransition model
         ]
       , drawSplash model
       , Html.div
@@ -682,51 +488,114 @@ drawSplash model =
     _ ->
       Html.div [] []
 
-transitionBlankout : Svg Msg
-transitionBlankout =
-  Svg.rect [attrX 51, attrY 51, attrWidth 898, attrHeight 898, attrClass "transition-blankout"] []
-
-drawTransition : Phase -> Svg Msg
-drawTransition phase =
-  case phase of
+drawTransition : Model -> Svg Msg
+drawTransition model =
+  case model.phase of
     Transitioning trans ->
-      drawTheTransition trans
+      let
+        oldLevel = List.head model.finishedLevels
+        newLevel = List.head model.remainingLevels
+      in
+        case oldLevel of
+          Just oldLevel -> drawTheTransition trans oldLevel newLevel
+          Nothing -> Svg.g [] []
     _ ->
       Svg.g [] []
 
-drawTheTransition : Transition -> Svg Msg
-drawTheTransition transition =
+drawTheTransition : Transition -> Level -> Maybe Level -> Svg Msg
+drawTheTransition transition oldLevel maybeNewLevel =
   case transition.phase of
+    Transition.Migrating step ->
+      let end = Target.center oldLevel.target
+      in drawMigration oldLevel transition.actionPoint end step
+    Transition.Absorbing step ->
+      let point = Target.center oldLevel.target
+      in drawAbsorption oldLevel point step
     Transition.Exploding step ->
-      let
-        (cx, cy) = transition.explosionPoint
-        r = toFloat step
-        opac = 1.0 - Transition.getExplodingCompleteness transition
-        style = "opacity:" ++ (toString opac)
-      in
-        Svg.g []
-          [ transitionBlankout
-          , Svg.circle [attrCX cx, attrCY cy, attrR r, SAttr.style style, attrClass "transition-explosion"] []
-          ]
+      let point = Target.center oldLevel.target
+      in drawExplosion oldLevel point step
     Transition.Messaging step ->
-      Svg.g []
-        [ transitionBlankout
-        , Svg.text_ [attrX 500, attrY 500, attrClass "transition-message"] [Svg.text transition.message]
-        ]
+      drawMessage oldLevel transition.message step
+    Transition.Moving step ->
+      let
+        oldCannon = oldLevel.cannon
+        oldTarget = oldLevel.target
+        (newCannon, newTarget) = case maybeNewLevel of
+          Just newLevel -> (newLevel.cannon, newLevel.target)
+          Nothing -> (Cannon.thrownCannon, Target.thrownTarget)
+      in
+        drawMoving oldCannon oldTarget newCannon newTarget step
 
-drawViewBox : Int -> Int -> Int -> Int -> String
-drawViewBox x y width height =
-  (toString x) ++ " " ++ (toString y) ++ " " ++ (toString width) ++ " " ++ (toString height)
+drawMigration : Level -> (Float, Float) -> (Float, Float) -> Int -> Svg Msg
+drawMigration level (x1, y1) (x2, y2) step =
+  let
+    progLin = Transition.migrateProgress step
+    prog = Ease.inQuad progLin
+    xTween = x1 + ((x2 - x1) * prog)
+    yTween = y1 + ((y2 - y1) * prog)
+  in
+    Svg.g []
+      [ drawTheCannon level.cannon
+      , drawTheTarget level.target
+      , drawTheBall xTween yTween 22
+      ]
+
+drawAbsorption : Level -> (Float, Float) -> Int -> Svg Msg
+drawAbsorption level (cx, cy) step =
+  let
+    progLin = Transition.explodeProgress step
+    prog = Ease.outQuint progLin
+    r = 22 - (prog * 22)
+  in
+    Svg.g []
+      [ drawTheCannon level.cannon
+      , drawTheTarget level.target
+      , drawTheBall cx cy r
+      ]
+
+drawExplosion : Level -> (Float, Float) -> Int -> Svg Msg
+drawExplosion level (cx, cy) step =
+  let
+    prog = Transition.explodeProgress step
+    r = prog * 60
+    opac = 1.0 - prog
+    style = "opacity:" ++ (toString opac)
+  in
+    Svg.g []
+      [ drawTheCannon level.cannon
+      , drawTheTarget level.target
+      , Svg.circle [attrCX cx, attrCY cy, attrR r, SAttr.style style, attrClass "transition-explosion"] []
+      ]
+
+drawMessage : Level -> String -> Int -> Svg Msg
+drawMessage level message step =
+  Svg.g []
+    [ drawTheCannon level.cannon
+    , drawTheTarget level.target
+    , Svg.text_
+      [ attrX 500
+      , attrY 500
+      , attrClass "transition-message"
+      ]
+      [ Svg.text message
+      ]
+    ]
+
+drawMoving : Cannon -> Target -> Cannon -> Target -> Int -> Svg Msg
+drawMoving oldCannon oldTarget newCannon newTarget step =
+  let
+    progLin = Transition.moveProgress step
+    prog = Ease.inOutQuint progLin
+    tweenCannon = Cannon.tweenCannon prog oldCannon newCannon
+    tweenTarget = Target.tweenTarget prog oldTarget newTarget
+  in
+    Svg.g [] [ drawTheTarget tweenTarget, drawTheCannon tweenCannon ]
 
 drawTarget : Model -> Svg Msg
 drawTarget model =
   case model.phase of
     Playing level -> drawTheTarget level.target
-    Ending -> Svg.g [] []
-    _ ->
-      case model.finishedLevels of
-        level :: others -> drawTheTarget level.target
-        [] -> Svg.g [] []
+    _ -> Svg.g [] []
 
 drawTheTarget : Target -> Svg Msg
 drawTheTarget target =
@@ -774,13 +643,6 @@ drawTargetCorner origX origY extX extY =
   in
     Svg.path [SAttr.d d, SAttr.class "target-corner"] []
 
-type PathCommand
-  = M Float Float
-  | L Float Float
-  | H Float
-  | V Float
-  | Z
-
 drawPath : List PathCommand -> String
 drawPath commands =
   case commands of
@@ -805,18 +667,16 @@ drawBall ball =
     Just ball ->
       case ball.shape of
         Bodies.Bubble radius ->
-          let
-            (cx, cy) = ball.pos
-            cxAttr = SAttr.cx (toString cx)
-            cyAttr = SAttr.cy (toString cy)
-            rAttr = SAttr.r (toString radius)
-            classAttr = SAttr.class "ball"
-          in
-            Svg.circle [cxAttr, cyAttr, rAttr, classAttr] []
+          let (cx, cy) = ball.pos
+          in drawTheBall cx cy radius
         Bodies.Box vec ->
           Svg.g [] []
     Nothing ->
       Svg.g [] []
+
+drawTheBall : Float -> Float -> Float -> Svg msg
+drawTheBall cx cy r =
+  Svg.circle [attrCX cx, attrCY cy, attrR r, attrClass "ball"] []
 
 drawCannon : Model -> Svg Msg
 drawCannon model =
@@ -888,45 +748,3 @@ drawBarrier barrier =
         classAttr = SAttr.class "barrier"
       in
         Svg.rect [xAttr, yAttr, widthAttr, heightAttr, classAttr] []
-
-------------------------------
-
-attrX : number -> Svg.Attribute Msg
-attrX x = SAttr.x (toString x)
-
-attrY : number -> Svg.Attribute Msg
-attrY y = SAttr.y (toString y)
-
-attrWidth : number -> Svg.Attribute Msg
-attrWidth width = SAttr.width (toString width)
-
-attrHeight : number -> Svg.Attribute Msg
-attrHeight height = SAttr.height (toString height)
-
-attrCX : number -> Svg.Attribute Msg
-attrCX cx = SAttr.cx (toString cx)
-
-attrCY : number -> Svg.Attribute Msg
-attrCY cy = SAttr.cy (toString cy)
-
-attrX1 : number -> Svg.Attribute Msg
-attrX1 x1 = SAttr.x1 (toString x1)
-
-attrY1 : number -> Svg.Attribute Msg
-attrY1 y1 = SAttr.y1 (toString y1)
-
-attrX2 : number -> Svg.Attribute Msg
-attrX2 x2 = SAttr.x2 (toString x2)
-
-attrY2 : number -> Svg.Attribute Msg
-attrY2 y2 = SAttr.y2 (toString y2)
-
-attrR : number -> Svg.Attribute Msg
-attrR r = SAttr.r (toString r)
-
-attrClass : String -> Svg.Attribute Msg
-attrClass cls = SAttr.class cls
-
-attrViewBox : number -> number -> number -> number -> Svg.Attribute Msg
-attrViewBox x y w h =
-  SAttr.viewBox ((toString x) ++ " " ++ (toString y) ++ " " ++ (toString w) ++ " " ++ (toString h))
