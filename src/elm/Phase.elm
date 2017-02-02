@@ -7,11 +7,12 @@ module Phase exposing (Phase(..))
 
 import Level exposing (Level)
 import Transition exposing (Transition)
+import Phys
 
 -- types -----------------------------------------------------------------------
 
 type Phase
-  = Starting
+  = Starting (List Phys.Obj)
   | Playing Level
   | Transitioning Transition
-  | Ending
+  | Ending (List Phys.Obj)

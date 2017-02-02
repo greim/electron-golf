@@ -63,7 +63,7 @@ init =
     viewport = Window.Size 0 0
     playport = Window.Size 0 0
     controlport = Window.Size 0 0
-    phase = Starting
+    phase = Starting Phys.splashBouncers
     keysPressed = KeysPressed.init
     ball = Nothing
     time = 0
@@ -119,8 +119,15 @@ update msg model =
       let
         newKeysPressed = keysPressedOn keyCode model.time model.keysPressed
         newModel = { model | keysPressed = newKeysPressed }
+        isSpaceStart = keyCode == 32 && case model.phase of
+          Starting splashBouncers -> True
+          Ending splashBouncers -> True
+          _ -> False
       in
-        (newModel, Cmd.none)
+        if isSpaceStart then
+          (newModel, delay 200 Start)
+        else
+          (newModel, Cmd.none)
 
     KeyUp keyCode ->
       let
@@ -146,8 +153,13 @@ update msg model =
         tickModel = { model | time = model.time + time }
       in
         case model.phase of
-          Starting ->
-            (tickModel, Cmd.none)
+          Starting splashBouncers ->
+            let
+              newSplashBouncers = Phys.stepSplashBouncers splashBouncers
+              newPhase = Starting newSplashBouncers
+              newModel = { tickModel | phase = newPhase }
+            in
+              (newModel, Cmd.none)
           Playing level ->
             let
               newModel = tickModel
@@ -161,8 +173,13 @@ update msg model =
               newModel = advanceTransition trans tickModel
             in
               (newModel, Cmd.none)
-          Ending ->
-            (tickModel, Cmd.none)
+          Ending splashBouncers ->
+            let
+              newSplashBouncers = Phys.stepSplashBouncers splashBouncers
+              newPhase = Ending newSplashBouncers
+              newModel = { tickModel | phase = newPhase }
+            in
+              (newModel, Cmd.none)
 
 advanceTransition : Transition -> Model -> Model
 advanceTransition transition model =
@@ -174,7 +191,7 @@ advanceTransition transition model =
         level :: newRemainingLevels ->
           { model | phase = Playing level, remainingLevels = newRemainingLevels }
         [] ->
-          { model | phase = Ending }
+          { model | phase = Ending Phys.splashBouncers }
 
 evaluatePlay : Phys.Obj -> Level -> Model -> Model
 evaluatePlay ball level model =
@@ -184,10 +201,9 @@ evaluatePlay ball level model =
       newFinishedLevels = finishedLevel :: model.finishedLevels
       actionPoint = ball.pos
       parDiff = finishedLevel.score - finishedLevel.par
-      message = if parDiff == -2 then "O.o"
-      else if parDiff == -1 then "WOW!"
-      else if parDiff == 0 then "Nice."
-      else "Okay!"
+      message = if parDiff < 0 then toString parDiff
+        --else if parDiff == 0 then "par!"
+        else "+" ++ (toString parDiff)
       trans = Transition.successful message ball.pos
     in
       { model
@@ -203,8 +219,9 @@ evaluatePlay ball level model =
       (tx, ty, tw, th) = level.target.pos
       x2 = tx + (tw / 2)
       y2 = ty + (th / 2)
+      fudge = toFloat (((round model.time) % 120) - 60)
       angle = (atan2 (y2 - y1) (x2 - x1)) * (360 / (pi * 2))
-      newCannon = { cannon | pos = ball.pos, angle = angle }
+      newCannon = { cannon | pos = ball.pos, angle = angle + fudge }
       -- increment score
       newScore = level.score + 1
       newLevel = { level | cannon = newCannon, score = newScore }
@@ -360,38 +377,30 @@ subscriptions model =
 view : Model -> Html Msg
 view model =
   let
-    attempts = case model.phase of
-      Playing level -> toString level.score
+    attempts = case model.phase of --------------------------------
+      Playing level -> level.score
       _ ->
         case model.finishedLevels of
-          level :: others -> toString level.score
-          [] -> "-"
+          level :: others -> level.score
+          [] -> -1
     finCount = List.length model.finishedLevels
-    remCount = List.length model.remainingLevels
-    levelCount = case model.phase of
-      Playing level -> finCount + remCount + 1
-      _ -> finCount + remCount
-    currentLevel = case model.phase of
+    levelCount = List.length Level.allLevels ----------------------------
+    currentLevel = case model.phase of ---------------------------------
       Playing level -> finCount + 1
       _ -> finCount
-    futurePar = List.foldl (\lvl tally -> tally + lvl.par) 0 model.remainingLevels
-    parSoFar = List.foldl (\lvl tally -> tally + lvl.par) 0 model.finishedLevels
-    prevTotalScore = List.foldl (\lvl tally -> tally + lvl.score) 0 model.finishedLevels
-    totalScore = case model.phase of
+    parSoFar = Level.tallyPar model.finishedLevels
+    prevTotalScore = Level.tallyScore model.finishedLevels
+    totalScore = case model.phase of ---------------------------------
       Playing level -> prevTotalScore + level.score
       _ -> prevTotalScore
-    totalAttempts = toString totalScore
-    parCompare = prevTotalScore - parSoFar
-    totalPar = case model.phase of
-      Playing level -> futurePar + parSoFar + level.par
-      _ -> futurePar + parSoFar
-    parCompareStr = if parCompare < 0 then toString parCompare else "+" ++ (toString parCompare)
-    levelPar = case model.phase of
-      Playing level -> toString level.par
+    parCompare = prevTotalScore - parSoFar --------------------------------
+    totalPar = Level.tallyPar Level.allLevels ---------------------------
+    levelPar = case model.phase of -----------------------------------
+      Playing level -> level.par
       _ ->
         case model.finishedLevels of
-          level :: others -> toString level.par
-          [] -> "-"
+          level :: others -> level.par
+          [] -> -1
   in
     Html.div []
       [ playingFieldWrapper model.playport.width model.playport.height
@@ -401,45 +410,11 @@ view model =
         , drawCannon model
         , drawBall model.ball
         , drawTransition model
+        , drawSplashBouncers model
         ]
       , drawSplash model
-      , Html.div
-        [ HAttr.id "controls"
-        , HAttr.style [("width", (toString model.controlport.width) ++ "px"), ("left", (toString model.playport.width) ++ "px")]
-        ]
-        [ Html.div [HAttr.class "tiles one-tile"]
-          [ Html.div [HAttr.class "tile"]
-            [ Html.div [HAttr.class "tile-label"] [Html.text "Score"]
-            , Html.div [HAttr.class "tile-value"]
-              [ Html.text totalAttempts
-              , Html.span [HAttr.class "slash"] [Html.text "/"]
-              , Html.text parCompareStr
-              ]
-            ]
-          ]
-        , Html.div [HAttr.class "tiles three-tile"]
-          [ Html.div [HAttr.class "tile"]
-            [ Html.div [HAttr.class "tile-label"] [Html.text "This Hole"]
-            , Html.div [HAttr.class "tile-value"]
-              [ Html.text attempts
-              , Html.span [HAttr.class "slash"] [Html.text "/"]
-              , Html.text levelPar
-              ]
-            ]
-          , Html.div [HAttr.class "tile"]
-            [ Html.div [HAttr.class "tile-label"] [Html.text "Level"]
-            , Html.div [HAttr.class "tile-value"]
-              [ Html.text (toString currentLevel)
-              , Html.span [HAttr.class "slash"] [Html.text "/"]
-              , Html.text (toString levelCount)
-              ]
-            ]
-          , Html.div [HAttr.class "tile"]
-            [ Html.div [HAttr.class "tile-label"] [Html.text "Course Par"]
-            , Html.div [HAttr.class "tile-value"] [Html.text (toString totalPar)]
-            ]
-          ]
-        ]
+      , drawEndSplash model (attempts, levelPar) (currentLevel, levelCount) (totalScore, totalPar, parCompare)
+      , drawTallies model (attempts, levelPar) (currentLevel, levelCount) (totalScore, totalPar, parCompare)
       ]
 
 boundary : Svg Msg
@@ -452,10 +427,62 @@ boundary =
    , SAttr.class "boundary"
    ] []
 
+drawTallies : Model -> (Int, Int) -> (Int, Int) -> (Int, Int, Int) -> Html Msg
+drawTallies model (attempts, levelPar) (currentLevel, levelCount) (totalScore, totalPar, parCompare) =
+  Html.div
+    [ HAttr.id "tallies"
+    , HAttr.style
+      [ ( "width", (toString model.playport.width) ++ "px")
+      , ( "font-size", (toString (model.playport.width // 100)) ++ "px")
+      ]
+    ]
+    [ Html.span [ HAttr.id "round", HAttr.class "section" ]
+      [ Html.span [ HAttr.class "label" ] [ Html.text "Current: " ]
+      , Html.text (if attempts >= 0 then toString attempts else "-")
+      , Html.span [ HAttr.class "slash" ] [ Html.text "/" ]
+      , Html.text (if levelPar >= 0 then toString levelPar else "-")
+      ]
+    , Html.span [ HAttr.id "level", HAttr.class "section" ]
+      [ Html.span [ HAttr.class "label" ] [ Html.text "Level: " ]
+      , Html.text (toString currentLevel)
+      , Html.span [ HAttr.class "slash" ] [ Html.text "/" ]
+      , Html.text (toString levelCount)
+      ]
+    , Html.span [ HAttr.id "total", HAttr.class "section" ]
+      [ Html.span [ HAttr.class "label" ] [ Html.text "Total Score: " ]
+      , Html.text (toString totalScore)
+      , Html.span [ HAttr.class "slash" ] [ Html.text "/" ]
+      , Html.text (toString totalPar)
+      ]
+    , Html.span [ HAttr.id "total", HAttr.class "section" ]
+      [ Html.span [ HAttr.class "label" ] [ Html.text "Status: " ]
+      , Html.text (if parCompare > 0 then ("+" ++ (toString parCompare)) else toString parCompare)
+      ]
+    ]
+
+drawSplashBouncers : Model -> Svg Msg
+drawSplashBouncers model =
+  let
+    maybeBouncers = case model.phase of
+      Starting bouncers -> Just bouncers
+      Ending bouncers -> Just bouncers
+      _ -> Nothing
+  in
+    case maybeBouncers of
+      Just bouncers ->
+        let
+          drawnBalls = bouncers
+            |> List.map (\b -> Just b)
+            |> List.map drawBall
+        in
+          Svg.g [] drawnBalls
+      Nothing ->
+        Svg.g [] []
+
 drawSplash : Model -> Html Msg
 drawSplash model =
   case model.phase of
-    Starting ->
+    Starting bouncers ->
       Html.div
         [ HAttr.id "splash"
         , HAttr.style
@@ -467,24 +494,84 @@ drawSplash model =
         [ Html.div [HAttr.id "splash-inner"]
           [ Html.h1 [] [Html.text "Electron Golf"]
           , Html.p []
-            [ Html.strong [] [Html.text "Goal: "]
-            , Html.text "Fire the electron cannon at the proton held in the target frame. Under highly stable conditions, the electron will be absorbed! Achieve this in as few shots as possible; lower scores are better."
+            [ Html.text "You're a bored particle physicist with an electron cannon and a proton isolation beam. The lab is empty. It's time to play "
+            , Html.em [] [ Html.text "Electron Golf. " ]
+            , Html.text "Bring the electron into proximity with the captive proton. Under exact conditions, they'll merge and form a neutron!"
             ]
           , Html.p []
             [ Html.strong [] [Html.text "Aim: "]
-            , Html.text "LEFT/RIGHT (SHIFT to fine-tune, ALT to spin fast)"
+            , Html.text "LEFT/RIGHT (+SHIFT/ALT to modify)."
             ]
           , Html.p []
-            [ Html.strong [] [Html.text "Fire: "]
-            , Html.text "SPACEBAR to charge cannon. Release to fire."
+            [ Html.strong [] [Html.text "Shoot: "]
+            , Html.text "SPACEBAR to charge. Release to fire."
             ]
           , Html.p []
             [ Html.strong [] [Html.text "Putt: "]
             , Html.text "SHIFT while pressing SPACEBAR."
             ]
-            , Html.button [HEv.onClick Start] [Html.text "Start"]
+          , Html.p []
+            [ Html.strong [] [Html.text "Start: "]
+            , Html.text "Press SPACEBAR"
+            ]
           ]
         ]
+    _ ->
+      Html.div [] []
+
+drawEndSplash : Model -> (Int, Int) -> (Int, Int) -> (Int, Int, Int) -> Html Msg
+drawEndSplash model (attempts, levelPar) (currentLevel, levelCount) (totalScore, totalPar, parCompare) =
+  case model.phase of
+    Ending bouncers ->
+      let
+        message = if parCompare <= -3 then "O.o"
+          else if parCompare <= -2 then "Fantastic!"
+          else if parCompare <= -1 then "Nice Job!"
+          else if parCompare <= -0 then "Well Done"
+          else "Game Over"
+        parMessage = if parCompare < 0 then "You shot under par."
+          else if parCompare == 0 then "You got par."
+          else if parCompare < 4 then "You shot over par."
+          else "You shot wayyy over."
+        parFollowup = if parCompare < 0 then "Amazing!"
+          else if parCompare == 0 then "Not bad."
+          else if parCompare < 4 then "You need to work on your foo."
+          else "...and you call yourself a scientist."
+      in
+        Html.div
+          [ HAttr.id "splash"
+          , HAttr.class "end-splash"
+          , HAttr.style
+            [ ("width", (toString model.playport.width) ++ "px")
+            , ("height", (toString model.playport.height) ++ "px")
+            , ("font-size", (toString (model.playport.width // 100)) ++ "px")
+            ]
+          ]
+          [ Html.div [HAttr.id "splash-inner"]
+            [ Html.h1 [] [Html.text message]
+            , Html.p []
+              [ Html.text "You cleared "
+              , Html.strong [ HAttr.class "value" ] [ Html.text (toString levelCount) ]
+              , Html.text " protons in "
+              , Html.strong [ HAttr.class "value" ] [ Html.text (toString totalScore) ]
+              , Html.text " moves."
+              ]
+            , Html.p []
+              [ Html.text "Course par was "
+              , Html.strong [ HAttr.class "value" ] [ Html.text (toString totalPar) ]
+              , Html.text (". " ++ parMessage)
+              ]
+            , Html.p []
+              [ Html.text parFollowup
+              ]
+            , Html.hr [] []
+            , Html.p []
+              [ Html.text "Press "
+              , Html.strong [ HAttr.class "value" ] [ Html.text "SPACEBAR" ]
+              , Html.text (" to play again.")
+              ]
+            ]
+          ]
     _ ->
       Html.div [] []
 
@@ -569,17 +656,24 @@ drawExplosion level (cx, cy) step =
 
 drawMessage : Level -> String -> Int -> Svg Msg
 drawMessage level message step =
-  Svg.g []
-    [ drawTheCannon level.cannon
-    , drawTheTarget level.target
-    , Svg.text_
-      [ attrX 500
-      , attrY 500
-      , attrClass "transition-message"
+  let
+    progLin = Transition.messageProgress step
+    prog = Ease.inExpo progLin
+    offset = prog * 400
+    opac = 1.0 - progLin
+  in
+    Svg.g []
+      [ drawTheCannon level.cannon
+      , drawTheTarget level.target
+      , Svg.text_
+        [ attrX 500
+        , attrY (500 - offset)
+        , attrClass "transition-message"
+        , SAttr.style ("opacity:" ++ (toString opac))
+        ]
+        [ Svg.text message
+        ]
       ]
-      [ Svg.text message
-      ]
-    ]
 
 drawMoving : Cannon -> Target -> Cannon -> Target -> Int -> Svg Msg
 drawMoving oldCannon oldTarget newCannon newTarget step =

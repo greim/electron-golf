@@ -16,6 +16,8 @@ module Phys exposing
   , playableWidth
   , playableHeight
   , gutter
+  , splashBouncers
+  , stepSplashBouncers
   )
 
 -- imports ---------------------------------------------------------------------
@@ -125,6 +127,26 @@ isAtRest ball barriers =
   let bodies = ball :: barriers
   in everyItem isZeroVelocity bodies
 
+splashBouncers : List Obj
+splashBouncers =
+  [ ball (100, 100) (45 + 10) 10
+  --, ball (900, 100) (45 + 20) (8 / 2)
+  --, ball (900, 900) (45 + 30) (9 / 2)
+  --, ball (100, 900) (45 + 40) (5 / 2)
+  --, ball (800, 200) (45 + 25) (8 / 2)
+  --, ball (800, 700) (45 + 35) (9 / 2)
+  --, ball (500, 500) (45 + 45) (5 / 2)
+  ]
+
+stepSplashBouncers : List Obj -> List Obj
+stepSplashBouncers balls =
+  let
+    bodies = balls ++ bounds
+    newBodies = BoxesAndBubbles.step (0, 0) (0, 0) bodies
+    newBalls = List.filter isBall newBodies
+  in
+    newBalls
+
 --------------------------------------------------------------------------------
 -- helpers
 
@@ -148,9 +170,47 @@ reduceBodyVelocity  bod =
 reduceVelocity : (Float, Float) -> (Float, Float)
 reduceVelocity (xVel, yVel) =
   let
+    {-
+     - Two opposing goals:
+     -
+     - 1. The ball should appear to glide effortlessly in a low-friction
+     -    environment.
+     - 2. The ball should stop soon in order to speed along game play.
+     -
+     - To achieve #1, we multiply the current speed by a ratio which is
+     - slightly below 1.0. The closer to 1.0, the longer the ball glides.
+     -
+     - To achieve #2, we subtract a very small constant from the speed, which
+     - is slightly above 0.0. At high speeds, the effect of this subtraction is
+     - negligible. As speed decreases, however, it begins to have a more
+     - obvious effect.
+     -
+     - We apply both calculations. The result is that when the ball launches,
+     - it appears to glide along frictionlessly, but as it slows down, it
+     - steadily increases braking pressure, coming to a smooth and rapid stop.
+     -
+     - #1 could be applied by simply multiplying the ratio with each leg of the
+     - velocity tuple, since it's a ratio, however applying #2 in that manner
+     - would cause the ball to curve, since it isn't a ratio. So instead we
+     - need to calculate the hypotenuse, then apply steps #1 and #2 to that to
+     - find the slowdown ratio, then multiply *that* by each leg of the
+     - velocity tuple.
+     -}
+
+    -- hypotenuse
     speed = sqrt (xVel * xVel + yVel * yVel)
-    newSpeed = max 0.0 ((speed * 0.99) - 0.0075)
+
+    -- constants
+    slowDownConstant = 0.99
+    brakingConstant = 0.0075
+
+    -- find the new speed, however this is still a hypotenuse
+    newSpeed = max 0.0 ((speed * slowDownConstant) - brakingConstant)
+
+    -- here's our final slowdown ratio
     slowDown = newSpeed / speed
+
+    -- apply to each leg
     newXVel = xVel * slowDown
     newYVel = yVel * slowDown
   in

@@ -1,7 +1,12 @@
 
 -- module ----------------------------------------------------------------------
 
-module Level exposing (Level, allLevels)
+module Level exposing
+  ( Level
+  , allLevels
+  , tallyPar
+  , tallyScore
+  )
 
 -- import ----------------------------------------------------------------------
 
@@ -19,6 +24,40 @@ type alias Level =
   , score : Int
   }
 
+-- functions -------------------------------------------------------------------
+
+tallyScore : List Level -> Int
+tallyScore levels =
+  List.foldl accScore 0 levels
+
+accScore : Level -> Int -> Int
+accScore level tally =
+  tally + level.score
+
+tallyPar : List Level -> Int
+tallyPar levels =
+  List.foldl accPar 0 levels
+
+accPar : Level -> Int -> Int
+accPar level tally =
+  tally + level.par
+
+genLevels : Float -> List Level
+genLevels n =
+  let
+    fudge = toFloat (((round n) % 60) - 30)
+    mapper = fudgeLevel fudge
+  in
+    List.map mapper allLevels
+
+fudgeLevel : Float -> Level -> Level
+fudgeLevel fudge level =
+  let
+    cannon = level.cannon
+    fudgedCannon = { cannon | angle = cannon.angle + fudge }
+  in
+    { level | cannon = fudgedCannon }
+
 -- values ----------------------------------------------------------------------
 
 allLevels : List Level
@@ -30,23 +69,23 @@ allLevels =
     1
     0
   , Level
-    (Cannon (100, 900) 315 0)
+    (Cannon (100, 900) 335 0)
     []
     (Target (450, 400, 150, 150))
     1
     0
   , Level
-    (Cannon (900, 900) 225 0)
+    (Cannon (900, 900) 180 0)
     []
     (Target (100, 100, 150, 150))
     1
     0
   , Level
-    (Cannon (100, 100) 65 0)
+    (Cannon (100, 100) 90 0)
     [ Phys.vertBarrier 500 50 600
     ]
     (Target (750, 100, 150, 150))
-    1
+    2
     0
   , Level
     (Cannon (880, 450) 202 0)
@@ -60,7 +99,7 @@ allLevels =
     2
     0
   , Level
-    (Cannon (880, 850) 255 0)
+    (Cannon (880, 850) 315 0)
     [ Phys.vertBarrier 333 51 666
     , Phys.vertBarrier 666 332 618
     ]

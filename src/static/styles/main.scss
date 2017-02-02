@@ -15,15 +15,58 @@ body {
   line-height: 1.4;
 }
 
+#tallies {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  height: 5%;
+  color: #c70;
+  text-shadow: 0 0 .5em rgba(255, 50, 0, 0.5);
+  box-sizing: border-box;
+  display: flex;
+  justify-content: space-around;
+  padding-top: 1.2em;
+  .section {
+    text-align: center;
+    flex-grow: 1;
+    font-size: 2.75em;
+    font-weight: bold;
+    width: 25%;
+    .label {
+      font-weight: normal;
+      opacity: 0.5;
+    }
+    .slash {
+      font-weight: normal;
+      opacity: 0.5;
+      margin: 0 .1em;
+    }
+  }
+}
+
 #splash {
   position: fixed;
   left: 0;
   top: 0;
-  background: #222;
   color: #999;
   box-sizing: border-box;
+  padding: 14em 20em;
+  &.end-splash {
+    text-align: center;
+  }
   h1, strong {
     color: #fff;
+  }
+  &:before {
+    content: "";
+    background: rgba(42,42,42,0.85);
+    position: absolute;
+    top: 12em;
+    left: 12em;
+    right: 12em;
+    bottom: 12em;
+    box-sizing: border-box;
+    border: 1px solid #f90;
   }
   button {
     font-size: inherit;
@@ -31,93 +74,19 @@ body {
     cursor: pointer;
     color: #f90;
     padding: 1em 1.5em;
-    border: .2em solid #f90;
+    border: 1px solid #f90;
   }
   #splash-inner {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    margin: 1.75em;
-    font-size: 3em;
-    padding: 1em 2em;
-    box-sizing: border-box;
-    border: .1em solid #f90;
-  }
-}
-
-#controls {
-  position: fixed;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  color: #999;
-  box-sizing: border-box;
-  padding: 35px 40px 35px 0;
-  line-height: 1.7;
-  font-size: 14px;
-  font-weight: 100;
-  background: #222;
-  border-right: 1px solid #111;
-  margin-left: -10px;
-  h1,h2,h3,h4,h5,h6 {
-    color: #fff;
-    font-weight: inherit;
-    line-height: 1.2;
-  }
-  h1,h2,h3,h4,h5,h6,p,ul,ol,dl,pre,blockquote {
-    margin: 10px 0;
-  }
-  strong {
-    font-weight: inherit;
-    color: #fff;
-  }
-  .tiles {
-    display: flex;
-    margin: 20px -10px;
-    &.one-tile .tile {
-      font-size: 3em;
-      width: 100%;
-    }
-    &.two-tile .tile {
-      font-size: 1.5em;
-      width: 50%;
-    }
-    &.three-tile .tile {
-      font-size: 1em;
-      width: 33%;
-    }
-    .tile {
-      padding: .9em .5em .25em;
+    position: relative;
+    font-size: 3.25em;
+    h1 {
       text-align: center;
-      line-height: 1.4;
-      flex-grow: 1;
-      flex-basis: auto;
-      flex-shrink: 1;
-      box-sizing: border-box;
-      background: rgba(0,0,0,0.25);
-      border: 2px solid #333;
-      margin: 0 10px;
-      border-radius: 2px;
-      color: #ccc;
-      text-shadow: 0 0 3px rgba(255,255,255,0.5);
-      box-shadow: 1px 2px 8px rgba(0,0,0,0.5) inset;
-      .tile-label {
-        font-size: .8em;
-        opacity: .25;
-      }
-      .tile-value {
-        font-size: 2em;
-        text-shadow: 1px 2px 8px #000;
-        font-weight: bold;
-        margin: .1em 0;
-        .slash {
-          font-weight: normal;
-          margin: 0 .2em;
-          opacity: .25;
-        }
-      }
+    }
+    hr {
+      height: 0;
+      border: 1px solid #f90;
+      border-width: 1px 0 0;
+      margin: 2em 0;
     }
   }
 }
@@ -157,7 +126,8 @@ text.transition-message {
   text-anchor: middle;
   dominant-baseline: middle;
   fill: #fff;
-  font-size: 70px;
+  font-size: 120px;
+  font-weight: bold;
 }
 
 text.par-label {
@@ -181,7 +151,7 @@ text.par-label {
     fill: transparent;
   }
   circle.power-radius {
-    stroke: #0f0;
+    stroke: #fff;
     stroke-width: 1px;
     fill: transparent;
   }
@@ -192,7 +162,7 @@ text.par-label {
     stroke: #fff;
     stroke-width: 2px;
     stroke-dasharray: 2, 7;
-    opacity: .25;
+    opacity: .35;
   }
   .power-gauge {
     rect {

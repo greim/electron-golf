@@ -81,13 +81,13 @@ moveProgress i =
 -- helpers ---------------------------------------------------------------------
 
 migrateSteps : Int
-migrateSteps = 10
+migrateSteps = 7
 
 absorbSteps : Int
-absorbSteps = 10
+absorbSteps = 7
 
 explodeSteps : Int
-explodeSteps = 50
+explodeSteps = 30
 
 messageSteps : Int
 messageSteps = 60

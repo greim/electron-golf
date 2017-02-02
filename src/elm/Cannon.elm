@@ -29,4 +29,4 @@ tweenCannon prog old new =
 
 thrownCannon : Cannon
 thrownCannon =
-  Cannon (1500, 1500) 0 0
+  Cannon (1500, 1500) 135 0
