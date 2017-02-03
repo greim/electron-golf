@@ -63,6 +63,31 @@ fudgeLevel fudge level =
 allLevels : List Level
 allLevels =
   [ Level
+  --  (Cannon (900, 100) 135 0)
+  --  [ Phys.bouncyBarrier 500 500 90 0.05
+  --  ]
+  --  (Target (450, 450, 100, 100))
+  --  2
+  --  0
+  --, Level
+  --  (Cannon (500, 150) 90 0)
+  --  [ Phys.bubbleBarrier 379.5 500 100
+  --  , Phys.bubbleBarrier 620.5 500 100
+  --  ]
+  --  (Target (460, 700, 80, 80))
+  --  2
+  --  0
+  --, Level
+  --  (Cannon (900, 500) 180 0)
+  --  [ Phys.bouncyBarrier (300 + (140 * 0)) (500 + 80) 60 (0.03 + 0.0)
+  --  , Phys.bouncyBarrier (300 + (140 * 1)) (500 - 80) 60 (0.03 + 0.2)
+  --  , Phys.bouncyBarrier (300 + (140 * 2)) (500 + 80) 60 (0.03 + 0.4)
+  --  , Phys.bouncyBarrier (300 + (140 * 3)) (500 - 80) 60 (0.03 + 0.6)
+  --  ]
+  --  (Target (100, 450, 100, 100))
+  --  1
+  --  0
+  --, Level
     (Cannon (100, 100) 45 0)
     []
     (Target (200, 200, 150, 150))

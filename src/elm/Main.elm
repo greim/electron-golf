@@ -720,7 +720,7 @@ drawTheTarget target =
     translate = "translate(" ++ (toString x) ++ " " ++ (toString y) ++ ")"
     cx = width / 2
     cy = height / 2
-    r = ((min width height) / 2) - 15
+    r = ((min width height) / 2) * 0.65
   in
     Svg.g
       [ SAttr.transform translate
