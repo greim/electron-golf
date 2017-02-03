@@ -93,4 +93,4 @@ messageSteps : Int
 messageSteps = 60
 
 moveSteps : Int
-moveSteps = 80
+moveSteps = 40

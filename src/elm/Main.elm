@@ -23,6 +23,7 @@ import Cannon exposing (Cannon)
 import Phase exposing (..)
 import View exposing (..)
 import Ease
+import Layout exposing (Layout)
 
 -- main ------------------------------------------------------------------------
 
@@ -39,9 +40,7 @@ main =
 -- model -----------------------------------------------------------------------
 
 type alias Model =
-  { viewport : Window.Size
-  , playport : Window.Size
-  , controlport : Window.Size
+  { playport : Layout
   , phase : Phase
   , keysPressed : KeysPressed
   , ball : Maybe Phys.Obj
@@ -60,16 +59,14 @@ type PathCommand
 init : (Model, Cmd Msg)
 init =
   let
-    viewport = Window.Size 0 0
-    playport = Window.Size 0 0
-    controlport = Window.Size 0 0
+    playport = Layout.from (Window.Size 100 100)
     phase = Starting Phys.splashBouncers
     keysPressed = KeysPressed.init
     ball = Nothing
     time = 0
     remainingLevels = allLevels
     finishedLevels = []
-    model = Model viewport playport controlport phase keysPressed ball time remainingLevels finishedLevels
+    model = Model playport phase keysPressed ball time remainingLevels finishedLevels
     cmd = Task.perform Resize Window.size
   in
     (model, cmd)
@@ -108,10 +105,8 @@ update msg model =
 
     Resize newViewport ->
       let
-        size = min newViewport.width newViewport.height
-        newPlayport = { newViewport | width = size, height = size }
-        newControlport = { newViewport | width = 400 }
-        newModel = { model | viewport = newViewport, playport = newPlayport, controlport = newControlport }
+        newPlayport = Layout.from newViewport
+        newModel = { model | playport = newPlayport }
       in
         (newModel, Cmd.none)
 
@@ -259,7 +254,7 @@ advanceBall level model =
           let
             endedLevel = { level | score = level.score + 3 }
             newFinishedLevels = endedLevel :: model.finishedLevels
-            trans = Transition.unsuccessful "Out of bounds. +3" ball.pos
+            trans = Transition.unsuccessful "OOB! +3" ball.pos
             newPhase = Transitioning trans
           in
             { model | ball = Nothing, phase = newPhase, finishedLevels = newFinishedLevels }
@@ -402,8 +397,17 @@ view model =
           level :: others -> level.par
           [] -> -1
   in
-    Html.div []
-      [ playingFieldWrapper model.playport.width model.playport.height
+    Html.div
+      [ HAttr.id "game-main"
+      , HAttr.style
+        [ ("left", (toString model.playport.left) ++ "px")
+        , ("top", (toString model.playport.top) ++ "px")
+        , ("width", (toString model.playport.width) ++ "px")
+        , ("height", (toString model.playport.height) ++ "px")
+        , ("font-size", (toString model.playport.fontSize) ++ "px")
+        ]
+      ]
+      [ playingFieldWrapper model.playport
         [ boundary
         , drawBarriers model
         , drawTarget model
@@ -415,6 +419,7 @@ view model =
       , drawSplash model
       , drawEndSplash model (attempts, levelPar) (currentLevel, levelCount) (totalScore, totalPar, parCompare)
       , drawTallies model (attempts, levelPar) (currentLevel, levelCount) (totalScore, totalPar, parCompare)
+      , help
       ]
 
 boundary : Svg Msg
@@ -427,14 +432,35 @@ boundary =
    , SAttr.class "boundary"
    ] []
 
+help : Html Msg
+help =
+  Html.div
+    [ HAttr.id "help"
+    ]
+    [ Html.span [ HAttr.class "section" ]
+      [ Html.span [ HAttr.class "label" ] [ Html.text "Aim: " ]
+      , Html.text "L"
+      , Html.span [ HAttr.class "slash" ] [ Html.text "/" ]
+      , Html.text "R"
+      ]
+    , Html.span [ HAttr.class "section" ]
+      [ Html.span [ HAttr.class "label" ] [ Html.text "Charge: " ]
+      , Html.text "Hold SP"
+      ]
+    , Html.span [ HAttr.class "section" ]
+      [ Html.span [ HAttr.class "label" ] [ Html.text "Fire: " ]
+      , Html.text "Release SP"
+      ]
+    , Html.span [ HAttr.class "section" ]
+      [ Html.span [ HAttr.class "label" ] [ Html.text "Putt: " ]
+      , Html.text "SHIFT + SP"
+      ]
+    ]
+
 drawTallies : Model -> (Int, Int) -> (Int, Int) -> (Int, Int, Int) -> Html Msg
 drawTallies model (attempts, levelPar) (currentLevel, levelCount) (totalScore, totalPar, parCompare) =
   Html.div
     [ HAttr.id "tallies"
-    , HAttr.style
-      [ ( "width", (toString model.playport.width) ++ "px")
-      , ( "font-size", (toString (model.playport.width // 100)) ++ "px")
-      ]
     ]
     [ Html.span [ HAttr.id "round", HAttr.class "section" ]
       [ Html.span [ HAttr.class "label" ] [ Html.text "Current: " ]
@@ -485,18 +511,11 @@ drawSplash model =
     Starting bouncers ->
       Html.div
         [ HAttr.id "splash"
-        , HAttr.style
-          [ ("width", (toString model.playport.width) ++ "px")
-          , ("height", (toString model.playport.height) ++ "px")
-          , ("font-size", (toString (model.playport.width // 100)) ++ "px")
-          ]
         ]
         [ Html.div [HAttr.id "splash-inner"]
           [ Html.h1 [] [Html.text "Electron Golf"]
           , Html.p []
-            [ Html.text "You're a bored particle physicist with an electron cannon and a proton isolation beam. The lab is empty. It's time to play "
-            , Html.em [] [ Html.text "Electron Golf. " ]
-            , Html.text "Bring the electron into proximity with the captive proton. Under exact conditions, they'll merge and form a neutron!"
+            [ Html.text "You're a bored particle physicist with an electron cannon and a proton isolation beam. The lab is empty. It's time to play Electron Golf! Bring the electron into proximity with the captive proton. Under very specific conditions, they'll merge and form a neutron!"
             ]
           , Html.p []
             [ Html.strong [] [Html.text "Aim: "]
@@ -524,28 +543,30 @@ drawEndSplash model (attempts, levelPar) (currentLevel, levelCount) (totalScore,
   case model.phase of
     Ending bouncers ->
       let
-        message = if parCompare <= -3 then "O.o"
-          else if parCompare <= -2 then "Fantastic!"
+        absParCompare = abs parCompare
+        message = if parCompare <= -3 then "Fantastic!"
+          else if parCompare <= -2 then "Terrific!"
           else if parCompare <= -1 then "Nice Job!"
-          else if parCompare <= -0 then "Well Done"
+          else if parCompare <= 0 then "Well Done"
           else "Game Over"
-        parMessage = if parCompare < 0 then "You shot under par."
-          else if parCompare == 0 then "You got par."
-          else if parCompare < 4 then "You shot over par."
-          else "You shot wayyy over."
-        parFollowup = if parCompare < 0 then "Amazing!"
-          else if parCompare == 0 then "Not bad."
-          else if parCompare < 4 then "You need to work on your foo."
-          else "...and you call yourself a scientist."
+        parMessage = if parCompare < 0 then Html.span [] [ Html.text "You shot ", val absParCompare, Html.text " under par."]
+          else if parCompare == 0 then Html.text "You got par."
+          else Html.span [] [ Html.text "You shot ", val absParCompare, Html.text " over par."]
+        parFollowup = if parCompare <= -4 then "I suspect you cheated but I can't prove it."
+          else if parCompare == -3 then "Few will be able to top that."
+          else if parCompare == -2 then "That's worth tweeting about, I think."
+          else if parCompare == -1 then "Solid game."
+          else if parCompare == 0 then "Not bad there, sport."
+          else if parCompare == 1 then "That seems respectable."
+          else if parCompare == 2 then "Not bad for a beginner."
+          else if parCompare == 3 then "We won't talk about this."
+          else if parCompare == 4 then "...and you call yourself a scientist."
+          else if parCompare == 5 then "...and you wanna be my latex salesman."
+          else "You know lower is better, right?"
       in
         Html.div
           [ HAttr.id "splash"
           , HAttr.class "end-splash"
-          , HAttr.style
-            [ ("width", (toString model.playport.width) ++ "px")
-            , ("height", (toString model.playport.height) ++ "px")
-            , ("font-size", (toString (model.playport.width // 100)) ++ "px")
-            ]
           ]
           [ Html.div [HAttr.id "splash-inner"]
             [ Html.h1 [] [Html.text message]
@@ -559,7 +580,8 @@ drawEndSplash model (attempts, levelPar) (currentLevel, levelCount) (totalScore,
             , Html.p []
               [ Html.text "Course par was "
               , Html.strong [ HAttr.class "value" ] [ Html.text (toString totalPar) ]
-              , Html.text (". " ++ parMessage)
+              , Html.text ". "
+              , parMessage
               ]
             , Html.p []
               [ Html.text parFollowup
@@ -659,7 +681,7 @@ drawMessage level message step =
   let
     progLin = Transition.messageProgress step
     prog = Ease.inExpo progLin
-    offset = prog * 400
+    offset = prog * 100
     opac = 1.0 - progLin
   in
     Svg.g []

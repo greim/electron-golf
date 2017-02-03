@@ -8,17 +8,23 @@
 body {
   margin: 0;
   padding: 0;
-  font-family: Poppins, sans-serif;
+  font-family: "Roboto Mono", sans-serif;
   font-weight: 100;
-  background: #333;
+  background: #222;
   color: #000;
   line-height: 1.4;
+  cursor: default;
 }
 
-#tallies {
+#game-main {
   position: fixed;
-  bottom: 0;
+}
+
+#tallies,
+#help {
+  position: absolute;
   left: 0;
+  right: 0;
   height: 5%;
   color: #c70;
   text-shadow: 0 0 .5em rgba(255, 50, 0, 0.5);
@@ -26,12 +32,12 @@ body {
   display: flex;
   justify-content: space-around;
   padding-top: 1.2em;
+  white-space: nowrap;
   .section {
     text-align: center;
     flex-grow: 1;
-    font-size: 2.75em;
+    font-size: 2.15em;
     font-weight: bold;
-    width: 25%;
     .label {
       font-weight: normal;
       opacity: 0.5;
@@ -44,10 +50,22 @@ body {
   }
 }
 
+#tallies {
+  bottom: 0;
+}
+
+#help {
+  top: 0;
+}
+
 #splash {
-  position: fixed;
+  position: absolute;
   left: 0;
   top: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
   color: #999;
   box-sizing: border-box;
   padding: 14em 20em;
@@ -78,7 +96,9 @@ body {
   }
   #splash-inner {
     position: relative;
-    font-size: 3.25em;
+    font-size: 2.30em;
+    line-height: 1.6;
+    text-shadow: 0 0 .2em rgba(255,255,255,0.2);
     h1 {
       text-align: center;
     }
@@ -92,7 +112,7 @@ body {
 }
 
 svg {
-  position: fixed;
+  position: absolute;
   background: #222;
   top: 0;
   left: 0;

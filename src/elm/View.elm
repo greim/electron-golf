@@ -5,18 +5,28 @@ module View exposing (..)
 
 -- import ----------------------------------------------------------------------
 
---import Html exposing (Html)
---import Html.Attributes as HAttr
+import Html exposing (Html)
+import Html.Attributes as HAttr
 --import Html.Events as HEv
 import Svg exposing (Svg)
 import Svg.Attributes as SAttr
 import Phys exposing (areaWidth, areaHeight)
+import Layout exposing (Layout)
 
 -- functions -------------------------------------------------------------------
 
-playingFieldWrapper : number -> number -> List (Svg msg) -> Svg msg
-playingFieldWrapper width height children =
-  Svg.svg [ viewBox, attrWidth width, attrHeight height ] children
+playingFieldWrapper : Layout -> List (Svg msg) -> Svg msg
+playingFieldWrapper playport children =
+  Svg.svg
+    [ viewBox
+    , attrWidth playport.width
+    , attrHeight playport.height
+    ]
+    children
+
+val : a -> Html msg
+val a =
+  Html.strong [ HAttr.class "value" ] [ Html.text (toString a) ]
 
 -- helpers ---------------------------------------------------------------------
 

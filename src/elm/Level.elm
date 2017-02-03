@@ -99,7 +99,7 @@ allLevels =
     2
     0
   , Level
-    (Cannon (880, 850) 315 0)
+    (Cannon (880, 850) 270 0)
     [ Phys.vertBarrier 333 51 666
     , Phys.vertBarrier 666 332 618
     ]
