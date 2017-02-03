@@ -515,7 +515,7 @@ drawSplash model =
         [ Html.div [HAttr.id "splash-inner"]
           [ Html.h1 [] [Html.text "Electron Golf"]
           , Html.p []
-            [ Html.text "You're a bored particle physicist with an electron cannon and a proton isolation beam. The lab is empty. It's time to play Electron Golf! Bring the electron into proximity with the captive proton. Under very specific conditions, they'll merge and form a neutron!"
+            [ Html.text "You are a bored particle physicist with an electron cannon and a proton isolation beam. It is time to play Electron Golf! Bring the electron into proximity with the captive proton. If you aim precisely, they will merge into a neutron. Your status will rise and you will be the envy of your scientist colleagues."
             ]
           , Html.p []
             [ Html.strong [] [Html.text "Aim: "]
@@ -558,11 +558,10 @@ drawEndSplash model (attempts, levelPar) (currentLevel, levelCount) (totalScore,
           else if parCompare == -1 then "Solid game."
           else if parCompare == 0 then "Not bad there, sport."
           else if parCompare == 1 then "That seems respectable."
-          else if parCompare == 2 then "Not bad for a beginner."
-          else if parCompare == 3 then "We won't talk about this."
-          else if parCompare == 4 then "...and you call yourself a scientist."
-          else if parCompare == 5 then "...and you wanna be my latex salesman."
-          else "You know lower is better, right?"
+          else if parCompare < 4 then "Not bad for a beginner."
+          else if parCompare < 7 then "Eh, maybe next time."
+          else if parCompare < 11 then "...and you call yourself a scientist."
+          else "Hint: lower scores are better."
       in
         Html.div
           [ HAttr.id "splash"
