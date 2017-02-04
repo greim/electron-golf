@@ -252,9 +252,9 @@ advanceBall level model =
           evaluatePlay ball newLevel model
         else if isOOB then
           let
-            endedLevel = { level | score = level.score + 3 }
+            endedLevel = { level | score = level.score + 6 }
             newFinishedLevels = endedLevel :: model.finishedLevels
-            trans = Transition.unsuccessful "OOB! +3" ball.pos
+            trans = Transition.unsuccessful "Glitch! +6" ball.pos
             newPhase = Transitioning trans
           in
             { model | ball = Nothing, phase = newPhase, finishedLevels = newFinishedLevels }
@@ -452,11 +452,14 @@ help =
 drawTallies : Model -> (Int, Int) -> (Int, Int) -> (Int, Int, Int) -> Html Msg
 drawTallies model (attempts, levelPar) (currentLevel, levelCount) (totalScore, totalPar, parCompare) =
   let
-    (angle, power) = case model.phase of
-      Playing level ->
-        (formatDeg level.cannon.angle, formatJoules level.cannon.power)
+    cannon = case model.phase of
+      Playing level -> level.cannon
       _ ->
-        ("000.0", "000")
+        case model.finishedLevels of
+          level :: rest -> level.cannon
+          [] -> Cannon (0, 0) 0 0
+    angle = formatDeg cannon.angle
+    power = formatJoules cannon.power
   in
     Html.div [ HAttr.id "tallies" ]
       [ labeledSlashVal "Cur"
