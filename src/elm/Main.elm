@@ -812,9 +812,10 @@ drawTheCannon cannon =
       [ transformAttr
       , classAttr
       ]
-      [ drawBox "barrel" (20, -10) (20, 20)
+      [ drawBox "barrel" (20, -10) (10, 20)
+      , drawBox "barrel" (32, -10) (6, 20)
       , drawCircPlain (0, 0) 20
-      , drawLinePlain (20, 0) (2100, 0)
+      , drawLine "launch-path" (20, 0) (2100, 0)
       , drawCircExt "power-radius" (0, 0) powerRadius [SAttr.style opacityStyle]
       , drawPowerGauge cannon.power
       ]
@@ -828,9 +829,13 @@ drawPowerGauge power =
       Svg.g
         [ SAttr.class "power-gauge"
         ]
-        [ drawCircPlain (-power, 0) 20
-        , drawCirc "gauge-dot" (0, 0) 10
-        , drawCirc "gauge-dot" (-power, 0) 10
+        [ drawCircPlain (-power, 0) 16
+        , drawCirc "gauge-dot-bg" (0, 0) 15
+        , drawCirc "gauge-dot-bg" (-power, 0) 15
+        , drawLineHoriz "gauge-stretch-bg" (-power, 0) power
+        , drawLineHoriz "gauge-stretch" (-power, 0) power
+        , drawCirc "gauge-dot" (0, 0) 8
+        , drawCirc "gauge-dot" (-power, 0) 8
         ]
 
 drawBarriers : Model -> Svg Msg

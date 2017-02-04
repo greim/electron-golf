@@ -77,6 +77,16 @@ drawBox cls (x, y) (width, height) =
     , attrClass cls
     ] []
 
+drawEllipse : String -> (Float, Float) -> (Float, Float) -> Svg msg
+drawEllipse cls (cx, cy) (rx, ry) =
+  Svg.ellipse
+    [ attrCX cx
+    , attrCY cy
+    , attrRX rx
+    , attrRY ry
+    , attrClass cls
+    ] []
+
 drawCirc : String -> (Float, Float) -> Float -> Svg msg
 drawCirc cls (cx, cy) radius =
   Svg.circle
@@ -167,6 +177,12 @@ attrY2 y2 = SAttr.y2 (toString y2)
 
 attrR : number -> Svg.Attribute msg
 attrR r = SAttr.r (toString r)
+
+attrRX : number -> Svg.Attribute msg
+attrRX rx = SAttr.rx (toString rx)
+
+attrRY : number -> Svg.Attribute msg
+attrRY ry = SAttr.ry (toString ry)
 
 attrClass : String -> Svg.Attribute msg
 attrClass cls = SAttr.class cls
