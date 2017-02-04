@@ -4,7 +4,7 @@
 --import Debug exposing (log)
 import Html exposing (Html)
 import Html.Attributes as HAttr
-import Html.Events as HEv
+--import Html.Events as HEv
 import Svg exposing (Svg)
 import Svg.Attributes as SAttr
 import Window
@@ -37,7 +37,7 @@ main =
     }
 
 
--- model -----------------------------------------------------------------------
+-- types/model -----------------------------------------------------------------
 
 type alias Model =
   { playport : Layout
@@ -289,7 +289,13 @@ rotateCannonBy isLeft isFine isCoarse speed cannon =
       |> (\a -> if isFine then a / 6 else a)
       |> (\a -> if isCoarse then a * 10 else a)
       |> (\a -> if isLeft then 0 - a else a)
-    newAngle = cannon.angle - incr
+    incrAngle = cannon.angle - incr
+    newAngle = if incrAngle < 0 then
+      incrAngle + 360
+    else if incrAngle > 360 then
+      incrAngle - 360
+    else
+      incrAngle
   in
     { cannon | angle = newAngle }
 
@@ -372,25 +378,25 @@ subscriptions model =
 view : Model -> Html Msg
 view model =
   let
-    attempts = case model.phase of --------------------------------
+    attempts = case model.phase of
       Playing level -> level.score
       _ ->
         case model.finishedLevels of
           level :: others -> level.score
           [] -> -1
     finCount = List.length model.finishedLevels
-    levelCount = List.length Level.allLevels ----------------------------
-    currentLevel = case model.phase of ---------------------------------
+    levelCount = List.length Level.allLevels
+    currentLevel = case model.phase of
       Playing level -> finCount + 1
       _ -> finCount
     parSoFar = Level.tallyPar model.finishedLevels
     prevTotalScore = Level.tallyScore model.finishedLevels
-    totalScore = case model.phase of ---------------------------------
+    totalScore = case model.phase of
       Playing level -> prevTotalScore + level.score
       _ -> prevTotalScore
-    parCompare = prevTotalScore - parSoFar --------------------------------
-    totalPar = Level.tallyPar Level.allLevels ---------------------------
-    levelPar = case model.phase of -----------------------------------
+    parCompare = prevTotalScore - parSoFar
+    totalPar = Level.tallyPar Level.allLevels
+    levelPar = case model.phase of
       Playing level -> level.par
       _ ->
         case model.finishedLevels of
@@ -424,67 +430,58 @@ view model =
 
 boundary : Svg Msg
 boundary =
-  Svg.rect
-   [ attrX Phys.gutter
-   , attrY Phys.gutter
-   , attrWidth Phys.playableWidth
-   , attrHeight Phys.playableHeight
-   , SAttr.class "boundary"
-   ] []
+  drawBox "boundary" (Phys.gutter, Phys.gutter) (Phys.playableWidth, Phys.playableHeight)
 
 help : Html Msg
 help =
   Html.div
-    [ HAttr.id "help"
-    ]
-    [ Html.span [ HAttr.class "section" ]
-      [ Html.span [ HAttr.class "label" ] [ Html.text "Aim: " ]
-      , Html.text "L"
-      , Html.span [ HAttr.class "slash" ] [ Html.text "/" ]
-      , Html.text "R"
-      ]
-    , Html.span [ HAttr.class "section" ]
-      [ Html.span [ HAttr.class "label" ] [ Html.text "Charge: " ]
-      , Html.text "Hold SP"
-      ]
-    , Html.span [ HAttr.class "section" ]
-      [ Html.span [ HAttr.class "label" ] [ Html.text "Fire: " ]
-      , Html.text "Release SP"
-      ]
-    , Html.span [ HAttr.class "section" ]
-      [ Html.span [ HAttr.class "label" ] [ Html.text "Putt: " ]
-      , Html.text "SHIFT + SP"
-      ]
+    [ HAttr.id "help" ]
+    [ labeledSlashVal "Aim" "L" "R"
+    , labeledVal "Charge" "Hold SP"
+    , labeledVal "Fire" "Release SP"
+    , labeledVal "Putt" "SHIFT + SP"
     ]
 
 drawTallies : Model -> (Int, Int) -> (Int, Int) -> (Int, Int, Int) -> Html Msg
 drawTallies model (attempts, levelPar) (currentLevel, levelCount) (totalScore, totalPar, parCompare) =
-  Html.div
-    [ HAttr.id "tallies"
-    ]
-    [ Html.span [ HAttr.id "round", HAttr.class "section" ]
-      [ Html.span [ HAttr.class "label" ] [ Html.text "Current: " ]
-      , Html.text (if attempts >= 0 then toString attempts else "-")
-      , Html.span [ HAttr.class "slash" ] [ Html.text "/" ]
-      , Html.text (if levelPar >= 0 then toString levelPar else "-")
+  let
+    (angle, power) = case model.phase of
+      Playing level ->
+        (formatDeg level.cannon.angle, formatJoules level.cannon.power)
+      _ ->
+        ("000.0", "000")
+  in
+    Html.div [ HAttr.id "tallies" ]
+      [ labeledSlashVal "Cur"
+          (if attempts >= 0 then toString attempts else "-")
+          (if levelPar >= 0 then toString levelPar else "-")
+      , labeledSlashVal "Lev"
+          (toString currentLevel)
+          (toString levelCount)
+      , labeledSlashVal "Tot"
+          (toString totalScore)
+          (toString totalPar)
+      , labeledVal "Sta"
+          (if parCompare > 0 then ("+" ++ (toString parCompare)) else toString parCompare)
+      , labeledVal "D"
+          angle
+      , labeledVal "J"
+          power
       ]
-    , Html.span [ HAttr.id "level", HAttr.class "section" ]
-      [ Html.span [ HAttr.class "label" ] [ Html.text "Level: " ]
-      , Html.text (toString currentLevel)
-      , Html.span [ HAttr.class "slash" ] [ Html.text "/" ]
-      , Html.text (toString levelCount)
-      ]
-    , Html.span [ HAttr.id "total", HAttr.class "section" ]
-      [ Html.span [ HAttr.class "label" ] [ Html.text "Total Score: " ]
-      , Html.text (toString totalScore)
-      , Html.span [ HAttr.class "slash" ] [ Html.text "/" ]
-      , Html.text (toString totalPar)
-      ]
-    , Html.span [ HAttr.id "total", HAttr.class "section" ]
-      [ Html.span [ HAttr.class "label" ] [ Html.text "Status: " ]
-      , Html.text (if parCompare > 0 then ("+" ++ (toString parCompare)) else toString parCompare)
-      ]
-    ]
+
+formatJoules : Float -> String
+formatJoules j =
+  String.padLeft 3 '0' (toString (round j))
+
+formatDeg : Float -> String
+formatDeg az =
+  let
+    absAz = abs az
+    firstPart = toString (round absAz)
+    secondPart = toString (rem (round (absAz * 10)) 10)
+    joined = (String.padLeft 3 '0' firstPart) ++ "." ++ secondPart
+  in
+    joined
 
 drawSplashBouncers : Model -> Svg Msg
 drawSplashBouncers model =
@@ -501,9 +498,9 @@ drawSplashBouncers model =
             |> List.map (\b -> Just b)
             |> List.map drawBall
         in
-          Svg.g [] drawnBalls
+          group drawnBalls
       Nothing ->
-        Svg.g [] []
+        emptyGroup
 
 drawSplash : Model -> Html Msg
 drawSplash model =
@@ -554,13 +551,13 @@ drawEndSplash model (attempts, levelPar) (currentLevel, levelCount) (totalScore,
           else Html.span [] [ Html.text "You shot ", val absParCompare, Html.text " over par."]
         parFollowup = if parCompare <= -4 then "I suspect you cheated but I can't prove it."
           else if parCompare == -3 then "Few will be able to top that."
-          else if parCompare == -2 then "That's worth tweeting about, I think."
-          else if parCompare == -1 then "Solid game."
-          else if parCompare == 0 then "Not bad there, sport."
+          else if parCompare == -2 then "Your foo abides in love."
+          else if parCompare == -1 then "Hats off to you."
+          else if parCompare == 0 then "Solid game."
           else if parCompare == 1 then "That seems respectable."
-          else if parCompare < 4 then "Not bad for a beginner."
-          else if parCompare < 7 then "Eh, maybe next time."
-          else if parCompare < 11 then "...and you call yourself a scientist."
+          else if parCompare <= 3 then "Not bad for a beginner."
+          else if parCompare <= 6 then "You need to work on your foo."
+          else if parCompare <= 10 then "...and you call yourself a scientist."
           else "Hint: lower scores are better."
       in
         Html.div
@@ -606,9 +603,9 @@ drawTransition model =
       in
         case oldLevel of
           Just oldLevel -> drawTheTransition trans oldLevel newLevel
-          Nothing -> Svg.g [] []
+          Nothing -> emptyGroup
     _ ->
-      Svg.g [] []
+      emptyGroup
 
 drawTheTransition : Transition -> Level -> Maybe Level -> Svg Msg
 drawTheTransition transition oldLevel maybeNewLevel =
@@ -634,7 +631,7 @@ drawTheTransition transition oldLevel maybeNewLevel =
       in
         drawMoving oldCannon oldTarget newCannon newTarget step
 
-drawMigration : Level -> (Float, Float) -> (Float, Float) -> Int -> Svg Msg
+drawMigration : Level -> (Float, Float) -> (Float, Float) -> Float -> Svg Msg
 drawMigration level (x1, y1) (x2, y2) step =
   let
     progLin = Transition.migrateProgress step
@@ -642,40 +639,40 @@ drawMigration level (x1, y1) (x2, y2) step =
     xTween = x1 + ((x2 - x1) * prog)
     yTween = y1 + ((y2 - y1) * prog)
   in
-    Svg.g []
+    group
       [ drawTheCannon level.cannon
       , drawTheTarget level.target
-      , drawTheBall xTween yTween 22
+      , drawTheBall (xTween, yTween) 22
       ]
 
-drawAbsorption : Level -> (Float, Float) -> Int -> Svg Msg
+drawAbsorption : Level -> (Float, Float) -> Float -> Svg Msg
 drawAbsorption level (cx, cy) step =
   let
     progLin = Transition.explodeProgress step
     prog = Ease.outQuint progLin
     r = 22 - (prog * 22)
   in
-    Svg.g []
+    group
       [ drawTheCannon level.cannon
       , drawTheTarget level.target
-      , drawTheBall cx cy r
+      , drawTheBall (cx, cy) r
       ]
 
-drawExplosion : Level -> (Float, Float) -> Int -> Svg Msg
-drawExplosion level (cx, cy) step =
+drawExplosion : Level -> (Float, Float) -> Float -> Svg Msg
+drawExplosion level pos step =
   let
     prog = Transition.explodeProgress step
     r = prog * 60
     opac = 1.0 - prog
     style = "opacity:" ++ (toString opac)
   in
-    Svg.g []
+    group
       [ drawTheCannon level.cannon
       , drawTheTarget level.target
-      , Svg.circle [attrCX cx, attrCY cy, attrR r, SAttr.style style, attrClass "transition-explosion"] []
+      , drawCircExt "transition-explosion" pos r [SAttr.style style]
       ]
 
-drawMessage : Level -> String -> Int -> Svg Msg
+drawMessage : Level -> String -> Float -> Svg Msg
 drawMessage level message step =
   let
     progLin = Transition.messageProgress step
@@ -683,7 +680,7 @@ drawMessage level message step =
     offset = prog * 100
     opac = 1.0 - progLin
   in
-    Svg.g []
+    group
       [ drawTheCannon level.cannon
       , drawTheTarget level.target
       , Svg.text_
@@ -696,7 +693,7 @@ drawMessage level message step =
         ]
       ]
 
-drawMoving : Cannon -> Target -> Cannon -> Target -> Int -> Svg Msg
+drawMoving : Cannon -> Target -> Cannon -> Target -> Float -> Svg Msg
 drawMoving oldCannon oldTarget newCannon newTarget step =
   let
     progLin = Transition.moveProgress step
@@ -704,13 +701,13 @@ drawMoving oldCannon oldTarget newCannon newTarget step =
     tweenCannon = Cannon.tweenCannon prog oldCannon newCannon
     tweenTarget = Target.tweenTarget prog oldTarget newTarget
   in
-    Svg.g [] [ drawTheTarget tweenTarget, drawTheCannon tweenCannon ]
+    group [ drawTheTarget tweenTarget, drawTheCannon tweenCannon ]
 
 drawTarget : Model -> Svg Msg
 drawTarget model =
   case model.phase of
     Playing level -> drawTheTarget level.target
-    _ -> Svg.g [] []
+    _ -> emptyGroup
 
 drawTheTarget : Target -> Svg Msg
 drawTheTarget target =
@@ -733,18 +730,12 @@ drawTheTarget target =
       , drawTargetCorner (width) (0) (-20) (20)
       , drawTargetCorner (width) (height) (-20) (-20)
       , drawTargetCorner (0) (height) (20) (-20)
-      , Svg.circle [attrCX cx, attrCY cy, attrR r] []
+      , drawCircPlain (cx, cy) r
       ]
 
 drawTargetBound : Float -> Float -> Float -> Float -> Svg Msg
 drawTargetBound x1 y1 x2 y2 =
-  Svg.line
-    [ attrX1 x1
-    , attrY1 y1
-    , attrX2 x2
-    , attrY2 y2
-    , SAttr.class "target-bound"
-    ] []
+  drawLine "target-bound" (x1, y1) (x2, y2)
 
 drawTargetCorner : Float -> Float -> Float -> Float -> Svg Msg
 drawTargetCorner origX origY extX extY =
@@ -782,22 +773,20 @@ drawBall ball =
     Just ball ->
       case ball.shape of
         Bodies.Bubble radius ->
-          let (cx, cy) = ball.pos
-          in drawTheBall cx cy radius
+          drawTheBall ball.pos radius
         Bodies.Box vec ->
-          Svg.g [] []
+          emptyGroup
     Nothing ->
-      Svg.g [] []
+      emptyGroup
 
-drawTheBall : Float -> Float -> Float -> Svg msg
-drawTheBall cx cy r =
-  Svg.circle [attrCX cx, attrCY cy, attrR r, attrClass "ball"] []
+drawTheBall : (Float, Float) -> Float -> Svg msg
+drawTheBall = drawCirc "ball"
 
 drawCannon : Model -> Svg Msg
 drawCannon model =
   case model.phase of
     Playing level -> drawTheCannon level.cannon
-    _ -> Svg.g [] []
+    _ -> emptyGroup
 
 drawTheCannon : Cannon -> Svg Msg
 drawTheCannon cannon =
@@ -813,10 +802,10 @@ drawTheCannon cannon =
       [ transformAttr
       , classAttr
       ]
-      [ Svg.rect [SAttr.x "20", SAttr.y "-10", SAttr.width "20", SAttr.height "20", SAttr.class "barrel"] []
-      , Svg.circle [SAttr.cx "0", SAttr.cy "0", SAttr.r "20"] []
-      , Svg.line [SAttr.x1 "20", SAttr.y1 "0", SAttr.x2 "2100", SAttr.y2 "0"] []
-      , Svg.circle [attrCX 0, attrCY 0, attrR powerRadius, attrClass "power-radius", SAttr.style opacityStyle] []
+      [ drawBox "barrel" (20, -10) (20, 20)
+      , drawCircPlain (0, 0) 20
+      , drawLinePlain (20, 0) (2100, 0)
+      , drawCircExt "power-radius" (0, 0) powerRadius [SAttr.style opacityStyle]
       , drawPowerGauge cannon.power
       ]
 
@@ -824,31 +813,27 @@ drawPowerGauge : Float -> Svg Msg
 drawPowerGauge power =
   case power of
     0 ->
-      Svg.g [] []
+      emptyGroup
     _ ->
       Svg.g
         [ SAttr.class "power-gauge"
         ]
-        [ Svg.circle [attrCX -power, attrCY 0, SAttr.r "20"] []
-        , Svg.circle [attrCX 0, attrCY 0, SAttr.r "10", SAttr.class "gauge-dot"] []
-        , Svg.circle [attrCX -power, attrCY 0, SAttr.r "10", SAttr.class "gauge-dot"] []
+        [ drawCircPlain (-power, 0) 20
+        , drawCirc "gauge-dot" (0, 0) 10
+        , drawCirc "gauge-dot" (-power, 0) 10
         ]
 
 drawBarriers : Model -> Svg Msg
 drawBarriers model =
   case model.phase of
-    Playing level -> Svg.g [] (List.map drawBarrier level.barriers)
-    _ -> Svg.g [] []
+    Playing level -> group (List.map drawBarrier level.barriers)
+    _ -> emptyGroup
 
 drawBarrier : Phys.Obj -> Svg Msg
 drawBarrier barrier =
   case barrier.shape of
     Bodies.Bubble r ->
-      let
-        (cx, cy) = barrier.pos
-        classAttr = SAttr.class "barrier"
-      in
-        Svg.circle [attrCX cx, attrCY cy, SAttr.r (toString r), classAttr] []
+      drawCirc "barrier" barrier.pos r
     Bodies.Box (halfWidth, halfHeight) ->
       let
         (cx, cy) = barrier.pos
@@ -856,10 +841,5 @@ drawBarrier barrier =
         y = cy - halfHeight
         width = halfWidth * 2
         height = halfHeight * 2
-        xAttr = SAttr.x (toString x)
-        yAttr = SAttr.y (toString y)
-        widthAttr = SAttr.width (toString width)
-        heightAttr = SAttr.height (toString height)
-        classAttr = SAttr.class "barrier"
       in
-        Svg.rect [xAttr, yAttr, widthAttr, heightAttr, classAttr] []
+        drawBox "barrier" (x, y) (width, height)

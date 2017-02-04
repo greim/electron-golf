@@ -17,11 +17,11 @@ module Transition exposing
 -- types -----------------------------------------------------------------------
 
 type Phase
-  = Migrating Int
-  | Absorbing Int
-  | Exploding Int
-  | Messaging Int
-  | Moving Int
+  = Migrating Float
+  | Absorbing Float
+  | Exploding Float
+  | Messaging Float
+  | Moving Float
 
 type alias Transition =
   { message : String
@@ -58,39 +58,39 @@ step tr =
       if i < moveSteps then Just { tr | phase = Moving (i + 1) }
       else Nothing
 
-migrateProgress : Int -> Float
+migrateProgress : Float -> Float
 migrateProgress i =
-  (toFloat i) / (toFloat migrateSteps)
+  i / migrateSteps
 
-absorbProgress : Int -> Float
+absorbProgress : Float -> Float
 absorbProgress i =
-  (toFloat i) / (toFloat absorbSteps)
+  i / absorbSteps
 
-explodeProgress : Int -> Float
+explodeProgress : Float -> Float
 explodeProgress i =
-  (toFloat i) / (toFloat explodeSteps)
+  i / explodeSteps
 
-messageProgress : Int -> Float
+messageProgress : Float -> Float
 messageProgress i =
-  (toFloat i) / (toFloat messageSteps)
+  i / messageSteps
 
-moveProgress : Int -> Float
+moveProgress : Float -> Float
 moveProgress i =
-  (toFloat i) / (toFloat moveSteps)
+  i / moveSteps
 
 -- helpers ---------------------------------------------------------------------
 
-migrateSteps : Int
+migrateSteps : Float
 migrateSteps = 7
 
-absorbSteps : Int
+absorbSteps : Float
 absorbSteps = 7
 
-explodeSteps : Int
+explodeSteps : Float
 explodeSteps = 30
 
-messageSteps : Int
+messageSteps : Float
 messageSteps = 60
 
-moveSteps : Int
-moveSteps = 40
+moveSteps : Float
+moveSteps = 80

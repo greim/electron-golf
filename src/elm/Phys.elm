@@ -147,8 +147,7 @@ stepSplashBouncers balls =
   in
     newBalls
 
---------------------------------------------------------------------------------
--- helpers
+-- helpers ---------------------------------------------------------------------
 
 infiniteDensity : Float
 infiniteDensity = 1.0 / 0.0
