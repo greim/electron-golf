@@ -1,3 +1,10 @@
+
+-- Lifted from https://github.com/jastice/boxes-and-bubbles
+-- and modified to work in Elm 0.18, until such time as this PR gets merged
+-- https://github.com/jastice/boxes-and-bubbles/pull/6
+
+--------------------------------------------------------------------------------
+
 module BoxesAndBubbles exposing (bubble, box, bounds, step)
 
 {-| The interface for the Boxes and Bubbles physics engine.

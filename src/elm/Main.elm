@@ -426,7 +426,14 @@ view model =
       , drawEndSplash model (attempts, levelPar) (currentLevel, levelCount) (totalScore, totalPar, parCompare)
       , drawTallies model (attempts, levelPar) (currentLevel, levelCount) (totalScore, totalPar, parCompare)
       , help
+      , copyright
       ]
+
+copyright : Html Msg
+copyright =
+  Html.p [ HAttr.class "copyright" ]
+    [ Html.text "Copyright (c) 2017 by Greg Reimer - All Rights Reserved"
+    ]
 
 boundary : Svg Msg
 boundary =
@@ -477,8 +484,8 @@ formatDeg : Float -> String
 formatDeg az =
   let
     absAz = abs az
-    firstPart = toString (round absAz)
-    secondPart = toString (rem (round (absAz * 10)) 10)
+    firstPart = toString (truncate absAz)
+    secondPart = toString (rem (truncate (absAz * 10)) 10)
     joined = (String.padLeft 3 '0' firstPart) ++ "." ++ secondPart
   in
     joined
@@ -512,7 +519,7 @@ drawSplash model =
         [ Html.div [HAttr.id "splash-inner"]
           [ Html.h1 [] [Html.text "Electron Golf"]
           , Html.p []
-            [ Html.text "You are a bored particle physicist with an electron cannon and a proton isolation beam. It is time to play Electron Golf! Bring the electron into proximity with the captive proton. If you aim precisely, they will merge into a neutron. Your status will rise and you will be the envy of your scientist colleagues."
+            [ Html.text "You are a bored particle physicist with an electron cannon and a proton isolation beam. It is time to play Electron Golf! Your goal is to bring the electron into proximity with the captive proton, causing them to merge into a neutron. If you succeed, you will be the envy of your scientist colleagues."
             ]
           , Html.p []
             [ Html.strong [] [Html.text "Aim: "]
