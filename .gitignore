@@ -1,6 +1,6 @@
 elm-stuff/
 node_modules/
 tmp/
-#dist/
+dist/
 .DS_Store
 audio/
