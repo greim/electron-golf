@@ -87,7 +87,7 @@ drawEllipse cls (cx, cy) (rx, ry) =
     , attrClass cls
     ] []
 
-drawCirc : String -> (Float, Float) -> Float -> Svg msg
+drawCirc : String -> (Float, Float) -> number -> Svg msg
 drawCirc cls (cx, cy) radius =
   Svg.circle
     [ attrCX cx
