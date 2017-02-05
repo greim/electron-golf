@@ -113,19 +113,19 @@ allLevels =
     1
     0
   , Level
-    (Cannon (100, 900) 335 0)
+    (Cannon (100, 900) 321.5 0)
     []
     (Target (450, 400, 150, 150))
     1
     0
   , Level
-    (Cannon (900, 900) 250 0)
+    (Cannon (900, 900) 230.5 0)
     []
     (Target (100, 100, 150, 150))
     1
     0
   , Level
-    (Cannon (100, 100) 90 0)
+    (Cannon (100, 100) 50 0)
     [ Phys.vertBarrier 500 50 600
     ]
     (Target (750, 100, 150, 150))
@@ -143,7 +143,7 @@ allLevels =
     2
     0
   , Level
-    (Cannon (880, 850) 270 0)
+    (Cannon (880, 850) 244.7 0)
     [ Phys.vertBarrier 333 51 666
     , Phys.vertBarrier 666 332 618
     ]
