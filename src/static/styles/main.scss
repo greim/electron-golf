@@ -107,21 +107,13 @@ body {
   }
   &:before {
     content: "";
-    background: rgba(42,42,42,0.85);
+    background: rgba(46,46,46,0.8);
     position: absolute;
     top: 12em;
     left: 12em;
     right: 12em;
     bottom: 12em;
     box-sizing: border-box;
-    border: 1px solid #f90;
-  }
-  button {
-    font-size: inherit;
-    background: rgba(255,255,255,0.05);
-    cursor: pointer;
-    color: #f90;
-    padding: 1em 1.5em;
     border: 1px solid #f90;
   }
   #splash-inner {
@@ -242,7 +234,8 @@ text.par-label {
     .gauge-stretch {
       stroke: #0f0;
       stroke-width: 8px;
-      opacity: .25;
+      opacity: .75;
+      stroke-dasharray: 2, 2;
     }
   }
 }
@@ -255,14 +248,18 @@ text.par-label {
   }
   path.target-corner {
     stroke: #fff;
-    stroke-width: 4px;
+    stroke-width: 3px;
     stroke-linejoin: round;
   }
-  circle {
-    fill: rgba(0,0,0,0.25);
-    stroke: #fff;
+  circle.proton {
+    fill: url(#spherical-gradient);
+    stroke: #999;
+    stroke-width: 2px;
+  }
+  circle.proton-surround {
+    fill: transparent;
+    stroke: #444;
     stroke-width: 1px;
-    opacity: .25;
   }
   &.goal {
     line.target-bound {
@@ -275,7 +272,7 @@ text.par-label {
 }
 
 circle.ball {
-  stroke: #fff;
+  stroke: #999;
   stroke-width: 2px;
-  fill: rgba(255,255,255,0.1);
+  fill: url(#spherical-gradient);
 }

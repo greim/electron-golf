@@ -87,7 +87,7 @@ absorbSteps : Float
 absorbSteps = 7
 
 explodeSteps : Float
-explodeSteps = 30
+explodeSteps = 50
 
 messageSteps : Float
 messageSteps = 60

@@ -65,6 +65,17 @@ defs =
       , Svg.stop [ SAttr.offset "60%", SAttr.stopColor "hsla(120, 100%, 50%, 1.0)" ] []
       , Svg.stop [ SAttr.offset "100%", SAttr.stopColor "hsla(120, 100%, 50%, 0.0)" ] []
       ]
+    , Svg.radialGradient
+      [ SAttr.id "spherical-gradient"
+      , SAttr.cx "35%"
+      , SAttr.cy "35%"
+      , SAttr.r "70%"
+      ]
+      [ Svg.stop [ SAttr.offset "0%", SAttr.stopColor "#888" ] []
+      , Svg.stop [ SAttr.offset "10%", SAttr.stopColor "#888" ] []
+      , Svg.stop [ SAttr.offset "15%", SAttr.stopColor "#666" ] []
+      , Svg.stop [ SAttr.offset "100%", SAttr.stopColor "#222" ] []
+      ]
     ]
 
 val : a -> Html msg
