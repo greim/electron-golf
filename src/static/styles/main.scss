@@ -23,9 +23,11 @@ body {
     font-weight: 100;
     position: fixed;
     text-align: left;
-    color: #000;
+    color: #555;
     margin: 0;
     padding: 1em;
+    font-size: 2vh;
+    text-align: center;
     line-height: 1;
     width: 100vh;
     bottom: 0;
@@ -157,9 +159,7 @@ rect.transition-blankout {
 }
 
 circle.transition-explosion {
-  fill: transparent;
-  stroke: #0f0;
-  stroke-width: 20px;
+  fill: url(#explosion-gradient);
 }
 
 text.transition-message {
@@ -191,14 +191,14 @@ text.par-label {
     fill: transparent;
   }
   circle.power-radius {
-    stroke: #fff;
-    stroke-width: 1px;
-    fill: transparent;
+    stroke: rgba(0, 255, 0, 0.25);
+    stroke-width: 0;
+    fill: url(#power-radius-gradient);
   }
   rect.barrel {
     fill: #fff;
   }
-  line {
+  line.launch-path {
     stroke: #fff;
     stroke-width: 2px;
     stroke-dasharray: 2, 7;
@@ -211,10 +211,23 @@ text.par-label {
       stroke-width: 6px;
       stroke-linejoin: round;
     }
+    .gauge-dot-bg {
+      fill: #222;
+      stroke: none;
+    }
     .gauge-dot {
       fill: #0f0;
       stroke: #333;
-      stroke-width: 5px;
+      stroke-width: 0;
+    }
+    .gauge-stretch-bg {
+      stroke: #222;
+      stroke-width: 18px;
+    }
+    .gauge-stretch {
+      stroke: #0f0;
+      stroke-width: 8px;
+      opacity: .25;
     }
   }
 }

@@ -22,7 +22,43 @@ playingFieldWrapper playport children =
     , attrWidth playport.width
     , attrHeight playport.height
     ]
-    children
+    (defs :: children)
+
+defs : Svg msg
+defs =
+  Svg.defs []
+    [ Svg.radialGradient
+      [ SAttr.id "power-radius-gradient"
+      ]
+      [ Svg.stop [ SAttr.offset "27%", SAttr.stopColor "hsla(120, 100%, 50%, 0.0)" ] []
+      , Svg.stop [ SAttr.offset "30%", SAttr.stopColor "hsla(120, 100%, 50%, 0.5)" ] []
+      , Svg.stop [ SAttr.offset "33%", SAttr.stopColor "hsla(120, 100%, 50%, 0.0)" ] []
+
+      , Svg.stop [ SAttr.offset "37%", SAttr.stopColor "hsla(120, 100%, 50%, 0.0)" ] []
+      , Svg.stop [ SAttr.offset "40%", SAttr.stopColor "hsla(120, 100%, 50%, .80)" ] []
+      , Svg.stop [ SAttr.offset "43%", SAttr.stopColor "hsla(120, 100%, 50%, 0.0)" ] []
+
+      , Svg.stop [ SAttr.offset "47%", SAttr.stopColor "hsla(120, 100%, 50%, 0.0)" ] []
+      , Svg.stop [ SAttr.offset "50%", SAttr.stopColor "hsla(120, 100%, 50%, 1.0)" ] []
+      , Svg.stop [ SAttr.offset "53%", SAttr.stopColor "hsla(120, 100%, 50%, 0.0)" ] []
+
+      , Svg.stop [ SAttr.offset "57%", SAttr.stopColor "hsla(120, 100%, 50%, 0.0)" ] []
+      , Svg.stop [ SAttr.offset "60%", SAttr.stopColor "hsla(120, 100%, 50%, .80)" ] []
+      , Svg.stop [ SAttr.offset "63%", SAttr.stopColor "hsla(120, 100%, 50%, 0.0)" ] []
+
+      , Svg.stop [ SAttr.offset "67%", SAttr.stopColor "hsla(120, 100%, 50%, 0.0)" ] []
+      , Svg.stop [ SAttr.offset "70%", SAttr.stopColor "hsla(120, 100%, 50%, 0.5)" ] []
+      , Svg.stop [ SAttr.offset "73%", SAttr.stopColor "hsla(120, 100%, 50%, 0.0)" ] []
+      ]
+    , Svg.radialGradient
+      [ SAttr.id "explosion-gradient"
+      ]
+      [ Svg.stop [ SAttr.offset "20%", SAttr.stopColor "hsla(120, 100%, 50%, 0.0)" ] []
+      , Svg.stop [ SAttr.offset "40%", SAttr.stopColor "hsla(120, 100%, 50%, 1.0)" ] []
+      , Svg.stop [ SAttr.offset "60%", SAttr.stopColor "hsla(120, 100%, 50%, 1.0)" ] []
+      , Svg.stop [ SAttr.offset "100%", SAttr.stopColor "hsla(120, 100%, 50%, 0.0)" ] []
+      ]
+    ]
 
 val : a -> Html msg
 val a =
@@ -77,7 +113,17 @@ drawBox cls (x, y) (width, height) =
     , attrClass cls
     ] []
 
-drawCirc : String -> (Float, Float) -> Float -> Svg msg
+drawEllipse : String -> (Float, Float) -> (Float, Float) -> Svg msg
+drawEllipse cls (cx, cy) (rx, ry) =
+  Svg.ellipse
+    [ attrCX cx
+    , attrCY cy
+    , attrRX rx
+    , attrRY ry
+    , attrClass cls
+    ] []
+
+drawCirc : String -> (Float, Float) -> number -> Svg msg
 drawCirc cls (cx, cy) radius =
   Svg.circle
     [ attrCX cx
@@ -167,6 +213,12 @@ attrY2 y2 = SAttr.y2 (toString y2)
 
 attrR : number -> Svg.Attribute msg
 attrR r = SAttr.r (toString r)
+
+attrRX : number -> Svg.Attribute msg
+attrRX rx = SAttr.rx (toString rx)
+
+attrRY : number -> Svg.Attribute msg
+attrRY ry = SAttr.ry (toString ry)
 
 attrClass : String -> Svg.Attribute msg
 attrClass cls = SAttr.class cls

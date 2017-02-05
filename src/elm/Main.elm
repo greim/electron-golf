@@ -314,7 +314,7 @@ chargeCannon level model =
             incr = pressDuration
               |> (\d -> (d / 100) + 1)
               |> logBase e
-              |> (\p -> if isFine then p / 10 else p)
+              |> (\p -> if isFine then p / 5 else p)
             newPower = min 500 cannon.power + incr
             newCannon = { cannon | power = newPower }
             newLevel = { level | cannon = newCannon }
@@ -672,8 +672,9 @@ drawExplosion : Level -> (Float, Float) -> Float -> Svg Msg
 drawExplosion level pos step =
   let
     prog = Transition.explodeProgress step
-    r = prog * 60
-    opac = 1.0 - prog
+    oProg = Ease.inQuad prog
+    r = (Ease.inSine prog) * 160
+    opac = 1.0 - oProg
     style = "opacity:" ++ (toString opac)
   in
     group
@@ -805,17 +806,18 @@ drawTheCannon cannon =
     classAttr = SAttr.class "cannon"
     transformAttr = SAttr.transform ("translate(" ++ (toString x) ++ "," ++ (toString y) ++ ") rotate(" ++ (toString cannon.angle) ++ ")")
     powerRadius = (cannon.power * 2.7) ^ 1.2
-    powerOpacity = min 1.0 (1.0 - (powerRadius / 900))
+    powerOpacity = (min 1.0 (1.0 - (powerRadius / 1000))) * 0.2
     opacityStyle = "opacity:" ++ (toString powerOpacity)
   in
     Svg.g
       [ transformAttr
       , classAttr
       ]
-      [ drawBox "barrel" (20, -10) (20, 20)
+      [ drawBox "barrel" (20, -10) (10, 20)
+      , drawBox "barrel" (32, -10) (6, 20)
       , drawCircPlain (0, 0) 20
-      , drawLinePlain (20, 0) (2100, 0)
-      , drawCircExt "power-radius" (0, 0) powerRadius [SAttr.style opacityStyle]
+      , drawLine "launch-path" (20, 0) (2100, 0)
+      , drawCircExt "power-radius" (0, 0) (powerRadius * 2) [SAttr.style opacityStyle]
       , drawPowerGauge cannon.power
       ]
 
@@ -828,9 +830,13 @@ drawPowerGauge power =
       Svg.g
         [ SAttr.class "power-gauge"
         ]
-        [ drawCircPlain (-power, 0) 20
-        , drawCirc "gauge-dot" (0, 0) 10
-        , drawCirc "gauge-dot" (-power, 0) 10
+        [ drawCircPlain (-power, 0) 16
+        , drawCirc "gauge-dot-bg" (0, 0) 15
+        , drawCirc "gauge-dot-bg" (-power, 0) 15
+        , drawLineHoriz "gauge-stretch-bg" (-power, 0) power
+        , drawLineHoriz "gauge-stretch" (-power, 0) power
+        , drawCirc "gauge-dot" (0, 0) 8
+        , drawCirc "gauge-dot" (-power, 0) 8
         ]
 
 drawBarriers : Model -> Svg Msg
