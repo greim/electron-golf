@@ -254,7 +254,7 @@ advanceBall level model =
           let
             endedLevel = { level | score = level.score + 6 }
             newFinishedLevels = endedLevel :: model.finishedLevels
-            trans = Transition.unsuccessful "Glitch! +6" ball.pos
+            trans = Transition.unsuccessful "Tunneled Out! +6" ball.pos
             newPhase = Transitioning trans
           in
             { model | ball = Nothing, phase = newPhase, finishedLevels = newFinishedLevels }
@@ -520,10 +520,11 @@ drawSplash model =
         [ HAttr.id "splash"
         ]
         [ Html.div [HAttr.id "splash-inner"]
-          [ Html.h1 [] [Html.text "Electron Golf"]
+          [ Html.h1 [] [Html.text "~ Electron Golf ~"]
           , Html.p []
-            [ Html.text "You are a bored particle physicist with an electron cannon and a proton isolation beam. It is time to play Electron Golf! Your goal is to bring the electron into proximity with the captive proton, causing them to merge into a neutron. If you succeed, you will be the envy of your scientist colleagues."
+            [ Html.text "Fire your electron cannon toward the captive proton, bringing the electron into proximity and causing them to merge. Pay attention to wave function, but beware of quantum effects! If you succeed, you'll be the envy of your scientist colleagues."
             ]
+          , Html.hr [] []
           , Html.p []
             [ Html.strong [] [Html.text "Aim: "]
             , Html.text "LEFT/RIGHT (+SHIFT/ALT to modify)."
@@ -814,7 +815,7 @@ drawTheCannon cannon =
       , classAttr
       ]
       [ drawBox "barrel" (20, -10) (10, 20)
-      , drawBox "barrel" (32, -10) (6, 20)
+      , drawBox "barrel" (32, -11) (6, 22)
       , drawCircPlain (0, 0) 20
       , drawLine "launch-path" (20, 0) (2100, 0)
       , drawCircExt "power-radius" (0, 0) (powerRadius * 2) [SAttr.style opacityStyle]
