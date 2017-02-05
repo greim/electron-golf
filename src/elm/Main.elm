@@ -599,6 +599,7 @@ drawEndSplash model (attempts, levelPar) (currentLevel, levelCount) (totalScore,
               , Html.strong [ HAttr.class "value" ] [ Html.text "SPACEBAR" ]
               , Html.text (" to play again.")
               ]
+            , blurb
             ]
           ]
     _ ->
