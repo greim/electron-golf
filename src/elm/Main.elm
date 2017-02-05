@@ -60,7 +60,7 @@ init : (Model, Cmd Msg)
 init =
   let
     playport = Layout.from (Window.Size 100 100)
-    phase = Starting Phys.splashBouncers
+    phase = Starting Phys.splashBouncers Cannon.practice
     keysPressed = KeysPressed.init
     ball = Nothing
     time = 0
@@ -114,32 +114,37 @@ update msg model =
       let
         newKeysPressed = keysPressedOn keyCode model.time model.keysPressed
         newModel = { model | keysPressed = newKeysPressed }
-        isSpaceStart = keyCode == 32 && case model.phase of
-          Starting splashBouncers -> True
-          Ending splashBouncers -> True
-          _ -> False
       in
-        if isSpaceStart then
-          (newModel, delay 200 Start)
-        else
-          (newModel, Cmd.none)
+        (newModel, Cmd.none)
 
     KeyUp keyCode ->
       let
         newKeysPressed = keysPressedOff keyCode model.time model.keysPressed
         newModel = { model | keysPressed = newKeysPressed }
       in
-        case (model.ball, model.phase, keyCode) of
-          (Nothing, Playing level, 32) ->
-            let
-              cannon = level.cannon
-              adjustedPower = cannon.power / 10
-              newBall = Just (Phys.ball cannon.pos cannon.angle adjustedPower)
-              newCannon = { cannon | power = 0 }
-              newLevel = { level | cannon = newCannon }
-              modelInMotion = { newModel | ball = newBall, phase = Playing newLevel }
-            in
-              (modelInMotion, Cmd.none)
+        case keyCode of
+          32 ->
+            case model.phase of
+              Starting bouncers cannon ->
+                (newModel, delay 200 Start)
+              Ending bouncers ->
+                (newModel, delay 200 Start)
+              Playing level ->
+                case model.ball of
+                  Just ball ->
+                    (newModel, Cmd.none)
+                  Nothing ->
+                    let
+                      cannon = level.cannon
+                      adjustedPower = cannon.power / 10
+                      newBall = Just (Phys.ball cannon.pos cannon.angle adjustedPower)
+                      newCannon = { cannon | power = 0 }
+                      newLevel = { level | cannon = newCannon }
+                      modelInMotion = { newModel | ball = newBall, phase = Playing newLevel }
+                    in
+                      (modelInMotion, Cmd.none)
+              _ ->
+                (newModel, Cmd.none)
           _ ->
             (newModel, Cmd.none)
 
@@ -148,10 +153,11 @@ update msg model =
         tickModel = { model | time = model.time + time }
       in
         case model.phase of
-          Starting splashBouncers ->
+          Starting splashBouncers cannon ->
             let
               newSplashBouncers = Phys.stepSplashBouncers splashBouncers
-              newPhase = Starting newSplashBouncers
+              newCannon = rotateTheCannon model.time model.keysPressed cannon
+              newPhase = Starting newSplashBouncers newCannon
               newModel = { tickModel | phase = newPhase }
             in
               (newModel, Cmd.none)
@@ -266,19 +272,23 @@ advanceBall level model =
 rotateCannon : Level -> Model -> Model
 rotateCannon level model =
   let
-    keysPressed = model.keysPressed
-    isFine = not (keysPressed.shift == Nothing)
-    isCoarse = not (keysPressed.alt == Nothing)
-    now = model.time
-    newCannon = case (keysPressed.left, keysPressed.right) of
-      (Just pressTime, Nothing) ->
-        rotateCannonBy True isFine isCoarse (now - pressTime) level.cannon
-      (Nothing, Just pressTime) ->
-        rotateCannonBy False isFine isCoarse (now - pressTime) level.cannon
-      _ -> level.cannon
+    newCannon = rotateTheCannon model.time model.keysPressed level.cannon
     newLevel = { level | cannon = newCannon }
   in
     { model | phase = Playing newLevel }
+
+rotateTheCannon : Time -> KeysPressed -> Cannon -> Cannon
+rotateTheCannon now keysPressed cannon =
+  let
+    isFine = not (keysPressed.shift == Nothing)
+    isCoarse = not (keysPressed.alt == Nothing)
+  in
+    case (keysPressed.left, keysPressed.right) of
+      (Just pressTime, Nothing) ->
+        rotateCannonBy True isFine isCoarse (now - pressTime) cannon
+      (Nothing, Just pressTime) ->
+        rotateCannonBy False isFine isCoarse (now - pressTime) cannon
+      _ -> cannon
 
 rotateCannonBy : Bool -> Bool -> Bool -> Float -> Cannon -> Cannon
 rotateCannonBy isLeft isFine isCoarse speed cannon =
@@ -417,8 +427,8 @@ view model =
         [ boundary
         , drawBarriers model
         , drawTarget model
-        , drawCannon model
         , drawBall model.ball
+        , drawCannon model
         , drawTransition model
         , drawSplashBouncers model
         ]
@@ -453,6 +463,7 @@ drawTallies : Model -> (Int, Int) -> (Int, Int) -> (Int, Int, Int) -> Html Msg
 drawTallies model (attempts, levelPar) (currentLevel, levelCount) (totalScore, totalPar, parCompare) =
   let
     cannon = case model.phase of
+      Starting bouncers cannon -> cannon
       Playing level -> level.cannon
       _ ->
         case model.finishedLevels of
@@ -497,7 +508,7 @@ drawSplashBouncers : Model -> Svg Msg
 drawSplashBouncers model =
   let
     maybeBouncers = case model.phase of
-      Starting bouncers -> Just bouncers
+      Starting bouncers cannon -> Just bouncers
       Ending bouncers -> Just bouncers
       _ -> Nothing
   in
@@ -515,14 +526,14 @@ drawSplashBouncers model =
 drawSplash : Model -> Html Msg
 drawSplash model =
   case model.phase of
-    Starting bouncers ->
+    Starting bouncers cannon ->
       Html.div
         [ HAttr.id "splash"
         ]
         [ Html.div [HAttr.id "splash-inner"]
           [ Html.h1 [] [Html.text "~ Electron Golf ~"]
           , Html.p []
-            [ Html.text "Fire your electron cannon toward the captive proton, bringing the electron into proximity and causing them to merge. Pay attention to wave function, but beware of quantum effects! If you succeed, you'll be the envy of your scientist colleagues."
+            [ Html.text "Using the cannon, fire an electron at the captive proton, bringing the two into proximity, thus forming a neutron. Pay attention to your probability distributions, and beware of high-energy quantum tunneling effects!"
             ]
           , Html.hr [] []
           , Html.p []
@@ -599,6 +610,7 @@ drawEndSplash model (attempts, levelPar) (currentLevel, levelCount) (totalScore,
               , Html.strong [ HAttr.class "value" ] [ Html.text "SPACEBAR" ]
               , Html.text (" to play again.")
               ]
+            , blurb
             ]
           ]
     _ ->
@@ -652,7 +664,7 @@ drawMigration level (x1, y1) (x2, y2) step =
   in
     group
       [ drawTheCannon level.cannon
-      , drawTheTarget level.target
+      , drawTheTarget 1 level.target
       , drawTheBall (xTween, yTween) 22
       ]
 
@@ -665,7 +677,7 @@ drawAbsorption level (cx, cy) step =
   in
     group
       [ drawTheCannon level.cannon
-      , drawTheTarget level.target
+      , drawTheTarget (1 - prog) level.target
       , drawTheBall (cx, cy) r
       ]
 
@@ -673,14 +685,14 @@ drawExplosion : Level -> (Float, Float) -> Float -> Svg Msg
 drawExplosion level pos step =
   let
     prog = Transition.explodeProgress step
-    oProg = Ease.inQuad prog
-    r = (Ease.inSine prog) * 160
+    oProg = Ease.outQuint prog
+    r = (prog) * 160
     opac = 1.0 - oProg
     style = "opacity:" ++ (toString opac)
   in
     group
       [ drawTheCannon level.cannon
-      , drawTheTarget level.target
+      , drawTheTarget 0 level.target
       , drawCircExt "transition-explosion" pos r [SAttr.style style]
       ]
 
@@ -694,7 +706,7 @@ drawMessage level message step =
   in
     group
       [ drawTheCannon level.cannon
-      , drawTheTarget level.target
+      , drawTheTarget 0 level.target
       , Svg.text_
         [ attrX 500
         , attrY (500 - offset)
@@ -713,22 +725,23 @@ drawMoving oldCannon oldTarget newCannon newTarget step =
     tweenCannon = Cannon.tweenCannon prog oldCannon newCannon
     tweenTarget = Target.tweenTarget prog oldTarget newTarget
   in
-    group [ drawTheTarget tweenTarget, drawTheCannon tweenCannon ]
+    group [ drawTheTarget prog tweenTarget, drawTheCannon tweenCannon ]
 
 drawTarget : Model -> Svg Msg
 drawTarget model =
   case model.phase of
-    Playing level -> drawTheTarget level.target
+    Playing level -> drawTheTarget 1 level.target
     _ -> emptyGroup
 
-drawTheTarget : Target -> Svg Msg
-drawTheTarget target =
+drawTheTarget : Float -> Target -> Svg Msg
+drawTheTarget protonSize target =
   let
     (x, y, width, height) = target.pos
     translate = "translate(" ++ (toString x) ++ " " ++ (toString y) ++ ")"
     cx = width / 2
     cy = height / 2
-    r = ((min width height) / 2) * 0.65
+    rFixed = ((min width height) / 2) * 0.65
+    r = rFixed * protonSize
   in
     Svg.g
       [ SAttr.transform translate
@@ -742,7 +755,12 @@ drawTheTarget target =
       , drawTargetCorner (width) (0) (-20) (20)
       , drawTargetCorner (width) (height) (-20) (-20)
       , drawTargetCorner (0) (height) (20) (-20)
-      , drawCircPlain (cx, cy) r
+      , drawCirc "proton-surround" (cx, cy) rFixed
+      , drawTargetLine (drawPath [ M (width / 2) -5,           V 10,  V -5, Z ])
+      , drawTargetLine (drawPath [ M (width / 2) (height + 5), V -10, V 5,  Z ])
+      , drawTargetLine (drawPath [ M -5          (height / 2), H 10,  H -5, Z ])
+      , drawTargetLine (drawPath [ M (width + 5) (height / 2), H -10, H 5,  Z ])
+      , drawCirc "proton" (cx, cy) r
       ]
 
 drawTargetBound : Float -> Float -> Float -> Float -> Svg Msg
@@ -757,9 +775,14 @@ drawTargetCorner origX origY extX extY =
       , V -extY
       , H extX
       , H -extX
+      , Z
       ]
   in
     Svg.path [SAttr.d d, SAttr.class "target-corner"] []
+
+drawTargetLine : String -> Svg Msg
+drawTargetLine d =
+  Svg.path [SAttr.d d, SAttr.class "target-corner"] []
 
 drawPath : List PathCommand -> String
 drawPath commands =
@@ -797,6 +820,7 @@ drawTheBall = drawCirc "ball"
 drawCannon : Model -> Svg Msg
 drawCannon model =
   case model.phase of
+    Starting bouncers cannon -> drawTheCannon cannon
     Playing level -> drawTheCannon level.cannon
     _ -> emptyGroup
 

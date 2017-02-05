@@ -12,6 +12,7 @@ import Svg exposing (Svg)
 import Svg.Attributes as SAttr
 import Phys exposing (areaWidth, areaHeight)
 import Layout exposing (Layout)
+import Markdown
 
 -- functions -------------------------------------------------------------------
 
@@ -23,6 +24,12 @@ playingFieldWrapper playport children =
     , attrHeight playport.height
     ]
     (defs :: children)
+
+blurb : Html msg
+blurb =
+  Markdown.toHtml [HAttr.id "blurb"] """
+Hi, my name is Greg Reimer. I thought it would be fun to try out the [Elm programming language](http://elm-lang.org/) by creating a video game, and this is the result. If you liked it, follow me on [Twitter](https://twitter.com/), or star the repo on [GitHub](https://github.com/greim/electron-golf).
+"""
 
 defs : Svg msg
 defs =
@@ -57,6 +64,17 @@ defs =
       , Svg.stop [ SAttr.offset "40%", SAttr.stopColor "hsla(120, 100%, 50%, 1.0)" ] []
       , Svg.stop [ SAttr.offset "60%", SAttr.stopColor "hsla(120, 100%, 50%, 1.0)" ] []
       , Svg.stop [ SAttr.offset "100%", SAttr.stopColor "hsla(120, 100%, 50%, 0.0)" ] []
+      ]
+    , Svg.radialGradient
+      [ SAttr.id "spherical-gradient"
+      , SAttr.cx "35%"
+      , SAttr.cy "35%"
+      , SAttr.r "70%"
+      ]
+      [ Svg.stop [ SAttr.offset "0%", SAttr.stopColor "#888" ] []
+      , Svg.stop [ SAttr.offset "10%", SAttr.stopColor "#888" ] []
+      , Svg.stop [ SAttr.offset "15%", SAttr.stopColor "#666" ] []
+      , Svg.stop [ SAttr.offset "100%", SAttr.stopColor "#222" ] []
       ]
     ]
 
@@ -177,6 +195,8 @@ labeledSlashVal label val1 val2 =
     ]
 
 -- helpers ---------------------------------------------------------------------
+
+
 
 viewBox : Svg.Attribute msg
 viewBox = attrViewBox 0 0 areaWidth areaHeight

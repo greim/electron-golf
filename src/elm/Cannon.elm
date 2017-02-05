@@ -1,7 +1,7 @@
 
 -- module ----------------------------------------------------------------------
 
-module Cannon exposing (Cannon, thrownCannon, tweenCannon)
+module Cannon exposing (Cannon, thrownCannon, tweenCannon, practice)
 
 -- types -----------------------------------------------------------------------
 
@@ -30,3 +30,7 @@ tweenCannon prog old new =
 thrownCannon : Cannon
 thrownCannon =
   Cannon (1500, 1500) 720 0
+
+practice : Cannon
+practice =
+  Cannon (800, 800) 225 0
