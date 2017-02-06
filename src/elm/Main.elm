@@ -909,7 +909,7 @@ drawPowerGauge : Float -> Svg Msg
 drawPowerGauge power =
   case power of
     0 ->
-      emptyGroup
+      group [] []
     _ ->
       Svg.g
         [ SAttr.class "power-gauge"
