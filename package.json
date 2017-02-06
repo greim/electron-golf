@@ -5,7 +5,7 @@
   "license": "NO LICENSE",
   "scripts": {
     "start": "webpack-dev-server --hot --inline --content-base src/",
-    "build": "rimraf dist && webpack"
+    "build": "rimraf dist && webpack && rimraf static && cp -r dist/* ."
   },
   "devDependencies": {
     "autoprefixer": "^6.3.6",
