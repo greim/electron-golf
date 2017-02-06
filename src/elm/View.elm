@@ -14,7 +14,34 @@ import Phys exposing (areaWidth, areaHeight)
 import Layout exposing (Layout)
 import Markdown
 
+-- types -----------------------------------------------------------------------
+
+type PathCommand
+  = M Float Float
+  | L Float Float
+  | H Float
+  | V Float
+  | Z
+
 -- functions -------------------------------------------------------------------
+
+drawPath : List PathCommand -> String
+drawPath commands =
+  case commands of
+    command :: rest ->
+      case command of
+        M x y ->
+          " m" ++ (toString x) ++ " " ++ (toString y) ++ (drawPath rest)
+        L x y ->
+          " l" ++ (toString x) ++ " " ++ (toString y) ++ (drawPath rest)
+        H len ->
+          " h" ++ (toString len) ++ (drawPath rest)
+        V len ->
+          " v" ++ (toString len) ++ (drawPath rest)
+        Z ->
+          " z" ++ (drawPath rest)
+    [] ->
+      ""
 
 playingFieldWrapper : Layout -> List (Svg msg) -> Svg msg
 playingFieldWrapper playport children =
@@ -75,6 +102,19 @@ defs =
       , Svg.stop [ SAttr.offset "10%", SAttr.stopColor "#888" ] []
       , Svg.stop [ SAttr.offset "15%", SAttr.stopColor "#666" ] []
       , Svg.stop [ SAttr.offset "100%", SAttr.stopColor "#222" ] []
+      ]
+    , Svg.linearGradient
+      [ SAttr.id "field-center-gradient"
+      , SAttr.x1 "10%"
+      , SAttr.x2 "20%"
+      , SAttr.y1 "30%"
+      , SAttr.y2 "40%"
+      , SAttr.spreadMethod "repeat"
+      ]
+      [ Svg.stop [ SAttr.offset "0%", SAttr.stopColor "rgba(0,0,0,0.1)" ] []
+      , Svg.stop [ SAttr.offset "50%", SAttr.stopColor "rgba(0,0,0,0.1)" ] []
+      , Svg.stop [ SAttr.offset "50%", SAttr.stopColor "rgba(255,255,255,0.1)" ] []
+      , Svg.stop [ SAttr.offset "100%", SAttr.stopColor "rgba(255,255,255,0.1)" ] []
       ]
     ]
 
@@ -169,6 +209,13 @@ drawCircExt cls (cx, cy) radius attrs =
   in
     Svg.circle allAttrs []
 
+drawArrow : String -> (Float, Float) -> (Float, Float) -> Svg msg
+drawArrow cls from to =
+  group
+    [ drawLine cls from to
+    , drawCirc cls to 10
+    ]
+
 group : List (Svg msg) -> Svg msg
 group children =
   Svg.g [] children
@@ -195,8 +242,6 @@ labeledSlashVal label val1 val2 =
     ]
 
 -- helpers ---------------------------------------------------------------------
-
-
 
 viewBox : Svg.Attribute msg
 viewBox = attrViewBox 0 0 areaWidth areaHeight

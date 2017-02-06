@@ -3,6 +3,7 @@
 module Phys exposing
   ( Obj
   , Role(..)
+  , Field
   , ball
   , vertBarrier
   , horizBarrier
@@ -27,10 +28,20 @@ import BoxesAndBubbles exposing (step, box, bubble)
 
 -- types -----------------------------------------------------------------------
 
-type Role = Ball | Barrier | Bound
+type Role
+  = Ball
+  | Barrier
+  | Bound
 
 type alias Obj =
   Body Role
+
+type alias Field =
+  { pos : (Float, Float)
+  , innerRadius : Float
+  , outerRadius : Float
+  , strength : Float
+  }
 
 -- values ----------------------------------------------------------------------
 
@@ -107,9 +118,10 @@ bubbleBarrier : Float -> Float -> Float -> Obj
 bubbleBarrier cx cy radius =
   bubble radius infiniteDensity normalRestitution (cx, cy) zeroVelocity Barrier
 
-step : Obj -> List Obj -> (Bool, Bool, Obj, List Obj)
-step ball barriers =
+step : Obj -> List Obj -> List Field -> (Bool, Bool, Obj, List Obj)
+step straightBall barriers fields =
   let
+    ball = applyFields straightBall fields
     bodies = ball :: (barriers ++ bounds)
     newBodies = BoxesAndBubbles.step (0, 0) (0, 0) bodies
     slowerBodies = List.map reduceBodyVelocity newBodies
@@ -121,6 +133,35 @@ step ball barriers =
     atRest = isAtRest ball barriers
   in
     (atRest, isOOB, newBall, newBarriers)
+
+applyFields : Obj -> List Field -> Obj
+applyFields ball fields =
+  let
+    forceVecs = List.map (\field -> getFieldForceVec ball field) fields
+    newVelocity = vecAddAll (ball.velocity :: forceVecs)
+  in
+    { ball | velocity = newVelocity }
+
+getFieldForceVec : Obj -> Field -> (Float, Float)
+getFieldForceVec ball field =
+  let
+    toField = vecDiff ball.pos field.pos
+    distToField = vecLen toField
+  in
+    if distToField > field.innerRadius && distToField < field.outerRadius then
+      let
+        rawForce = 0.1 / (distToField)
+        force = field.strength * rawForce
+        forceVec = vecMult force toField
+      in
+        forceVec
+    else if distToField < field.innerRadius then
+      let
+        (x, y) = ball.velocity
+      in
+        (-x * 0.025, -y * 0.025)
+    else
+      (0, 0)
 
 isAtRest : Obj -> List Obj -> Bool
 isAtRest ball barriers =
@@ -148,6 +189,26 @@ stepSplashBouncers balls =
     newBalls
 
 -- helpers ---------------------------------------------------------------------
+
+vecAdd : (Float, Float) -> (Float, Float) -> (Float, Float)
+vecAdd (x1, y1) (x2, y2) =
+  ((x1 + x2), (y1 + y2))
+
+vecMult : Float -> (Float, Float) -> (Float, Float)
+vecMult ratio (x, y) =
+  (x * ratio, y * ratio)
+
+vecLen : (Float, Float) -> Float
+vecLen (x, y) =
+  sqrt ((x^2) + (y^2))
+
+vecDiff : (Float, Float) -> (Float, Float) -> (Float, Float)
+vecDiff (x1, y1) (x2, y2) =
+  ((x2 - x1), (y2 - y1))
+
+vecAddAll : List (Float, Float) -> (Float, Float)
+vecAddAll vecs =
+  List.foldl vecAdd zeroVelocity vecs
 
 infiniteDensity : Float
 infiniteDensity = 1.0 / 0.0
