@@ -2,9 +2,10 @@
 -- import ----------------------------------------------------------------------
 
 --import Debug exposing (log)
+import Html.Events as HEv
+import Dict exposing (Dict)
 import Html exposing (Html)
 import Html.Attributes as HAttr
---import Html.Events as HEv
 import Svg exposing (Svg)
 import Svg.Attributes as SAttr
 import Window
@@ -18,7 +19,7 @@ import Transition exposing (Transition)
 import Phys
 import KeysPressed exposing (KeysPressed)
 import Target exposing (Target)
-import Level exposing (Level, allLevels)
+import Level exposing (Level)
 import Cannon exposing (Cannon)
 import Phase exposing (..)
 import View exposing (..)
@@ -57,7 +58,7 @@ init =
     keysPressed = KeysPressed.init
     ball = Nothing
     time = 0
-    remainingLevels = allLevels
+    remainingLevels = []
     finishedLevels = []
     model = Model playport phase keysPressed ball time remainingLevels finishedLevels
     cmd = Task.perform Resize Window.size
@@ -73,7 +74,7 @@ type Msg
   | KeyDown Keyboard.KeyCode
   | KeyUp Keyboard.KeyCode
   | Frame Time
-  | Start
+  | Start String
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
@@ -82,19 +83,24 @@ update msg model =
     NoOp ->
       (model, Cmd.none)
 
-    Start ->
-      case allLevels of
-        level :: remainingLevels ->
-          let
-            newModel = { model
-              | remainingLevels = remainingLevels
-              , finishedLevels = []
-              , phase = Playing level
-              }
-          in
-            (newModel, Cmd.none)
-        [] ->
+    Start key ->
+      case Dict.get key Level.courses of
+        Nothing ->
           (model, Cmd.none)
+        Just levels ->
+          case levels of
+            level :: remainingLevels ->
+              let
+                newModel = { model
+                  | remainingLevels = remainingLevels
+                  , finishedLevels = []
+                  , phase = Playing level
+                  , ball = Nothing
+                  }
+              in
+                (newModel, Cmd.none)
+            [] ->
+              (model, Cmd.none)
 
     Resize newViewport ->
       let
@@ -118,10 +124,6 @@ update msg model =
         case keyCode of
           32 ->
             case model.phase of
-              Starting bouncers cannon ->
-                (newModel, delay 200 Start)
-              Ending bouncers ->
-                (newModel, delay 200 Start)
               Playing level ->
                 case model.ball of
                   Just ball ->
@@ -138,6 +140,11 @@ update msg model =
                       (modelInMotion, Cmd.none)
               _ ->
                 (newModel, Cmd.none)
+          85 ->
+            let
+              revertModel = { newModel | phase = Starting Phys.splashBouncers Cannon.practice }
+            in
+              (revertModel, Cmd.none)
           _ ->
             (newModel, Cmd.none)
 
@@ -317,7 +324,7 @@ chargeCannon level model =
             incr = pressDuration
               |> (\d -> (d / 100) + 1)
               |> logBase e
-              |> (\p -> if isFine then p / 5 else p)
+              |> (\p -> if isFine then p / 6 else p / 2)
             newPower = min 500 cannon.power + incr
             newCannon = { cannon | power = newPower }
             newLevel = { level | cannon = newCannon }
@@ -388,7 +395,10 @@ view model =
           level :: others -> level.score
           [] -> -1
     finCount = List.length model.finishedLevels
-    levelCount = List.length Level.allLevels
+    remCount = List.length model.remainingLevels
+    levelCount = case model.phase of
+      Playing level -> finCount + remCount + 1
+      _ -> finCount + remCount
     currentLevel = case model.phase of
       Playing level -> finCount + 1
       _ -> finCount
@@ -398,7 +408,9 @@ view model =
       Playing level -> prevTotalScore + level.score
       _ -> prevTotalScore
     parCompare = prevTotalScore - parSoFar
-    totalPar = Level.tallyPar Level.allLevels
+    totalPar = case model.phase of
+      Playing level -> (Level.tallyPar model.finishedLevels) + (Level.tallyPar model.remainingLevels) + 1
+      _ -> (Level.tallyPar model.finishedLevels) + (Level.tallyPar model.remainingLevels)
     levelPar = case model.phase of
       Playing level -> level.par
       _ ->
@@ -419,8 +431,8 @@ view model =
       [ playingFieldWrapper model.playport
         [ boundary
         , drawFields model
-        , drawBarriers model
         , drawTarget model
+        , drawBarriers model
         , drawBall model.ball
         , drawCannon model
         , drawTransition model
@@ -479,11 +491,15 @@ drawField field =
     (x, y) = field.pos
     tPosX = x
     tPosY = y - (field.outerRadius + 10)
+    charge = if field.strength < 0 then
+      toString field.strength
+    else
+      "+" ++ (toString field.strength)
   in
     group
       [ drawCirc "field field-inner" field.pos field.innerRadius
       , drawCirc "field field-outer" field.pos field.outerRadius
-      , Svg.text_ [attrX tPosX, attrY tPosY, attrClass "field field-label"] [Svg.text ("charge: " ++ (toString field.strength))]
+      , Svg.text_ [attrX tPosX, attrY tPosY, attrClass "field field-label"] [Svg.text ("charge: " ++ charge)]
       ]
 
 copyright : Html Msg
@@ -501,9 +517,9 @@ help =
   Html.div
     [ HAttr.id "help" ]
     [ labeledSlashVal "Aim" "L" "R"
-    , labeledVal "Charge" "Hold SP"
-    , labeledVal "Fire" "Release SP"
-    , labeledVal "Putt" "SHIFT + SP"
+    , labeledVal "Drive" "SPC -> Release"
+    , labeledVal "Putt" "SHIFT + SPC"
+    , labeledVal "Reset" "U"
     ]
 
 drawTallies : Model -> (Int, Int) -> (Int, Int) -> (Int, Int, Int) -> Html Msg
@@ -529,7 +545,7 @@ drawTallies model (attempts, levelPar) (currentLevel, levelCount) (totalScore, t
       , labeledSlashVal "Tot"
           (toString totalScore)
           (toString totalPar)
-      , labeledVal "Sta"
+      , labeledVal "+/-"
           (if parCompare > 0 then ("+" ++ (toString parCompare)) else toString parCompare)
       , labeledVal "D"
           angle
@@ -580,9 +596,9 @@ drawSplash model =
         [ Html.div [HAttr.id "splash-inner"]
           [ Html.h1 [] [Html.text "~ Electron Golf ~"]
           , Html.p []
-            [ Html.text "Using the cannon, fire an electron at the captive proton, bringing the two into proximity, thus forming a neutron. Pay attention to your probability distributions, and beware of high-energy quantum tunneling effects!"
+            [ Html.text "Fire an electron at the captive proton, bringing the two into proximity, thus forming a neutron. Pay attention to your probability distributions, and beware of high-energy quantum tunneling effects."
             ]
-          , Html.hr [] []
+          , drawCourseOptions
           , Html.p []
             [ Html.strong [] [Html.text "Aim: "]
             , Html.text "LEFT/RIGHT (+SHIFT/ALT to modify)."
@@ -603,6 +619,24 @@ drawSplash model =
         ]
     _ ->
       Html.div [] []
+
+drawCourseOptions : Html Msg
+drawCourseOptions =
+  let
+    keys = [ "Beginner", "Intermediate", "Advanced" ]
+  in
+    Html.div
+      [ HAttr.id "course-options" ]
+      ( List.map drawCourseOption keys )
+
+drawCourseOption : String -> Html Msg
+drawCourseOption key =
+  Html.button
+    [ HAttr.class "course-option"
+    , HEv.onClick (Start key)
+    ]
+    [ Html.text key
+    ]
 
 drawEndSplash : Model -> (Int, Int) -> (Int, Int) -> (Int, Int, Int) -> Html Msg
 drawEndSplash model (attempts, levelPar) (currentLevel, levelCount) (totalScore, totalPar, parCompare) =
@@ -652,11 +686,7 @@ drawEndSplash model (attempts, levelPar) (currentLevel, levelCount) (totalScore,
               [ Html.text parFollowup
               ]
             , Html.hr [] []
-            , Html.p []
-              [ Html.text "Press "
-              , Html.strong [ HAttr.class "value" ] [ Html.text "SPACEBAR" ]
-              , Html.text (" to play again.")
-              ]
+            , drawCourseOptions
             , blurb
             ]
           ]
