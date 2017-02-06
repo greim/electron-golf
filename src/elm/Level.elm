@@ -3,11 +3,13 @@
 
 module Level exposing
   ( Level
-  , allLevels
   , tallyPar
   , tallyScore
   , XAnchor(..)
   , YAnchor(..)
+  , Course
+  , Courses
+  , courses
   )
 
 -- import ----------------------------------------------------------------------
@@ -15,6 +17,7 @@ module Level exposing
 import Cannon exposing (Cannon)
 import Target exposing (Target)
 import Phys exposing (horizBarrier, vertBarrier, bubbleBarrier, bouncyBarrier)
+import Dict exposing (Dict)
 
 -- types -----------------------------------------------------------------------
 
@@ -40,6 +43,12 @@ type alias Message =
   , yAnchor : YAnchor
   }
 
+type alias Course =
+  List Level
+
+type alias Courses =
+  Dict String Course
+
 -- functions -------------------------------------------------------------------
 
 tallyScore : List Level -> Int
@@ -58,14 +67,6 @@ accPar : Level -> Int -> Int
 accPar level tally =
   tally + level.par
 
-genLevels : Float -> List Level
-genLevels n =
-  let
-    fudge = toFloat (((round n) % 60) - 30)
-    mapper = fudgeLevel fudge
-  in
-    List.map mapper allLevels
-
 fudgeLevel : Float -> Level -> Level
 fudgeLevel fudge level =
   let
@@ -76,20 +77,31 @@ fudgeLevel fudge level =
 
 -- values ----------------------------------------------------------------------
 
-allLevels : List Level
-allLevels =
+beginner : Course
+beginner =
   [
 
   ----------------------------------------------------------------------------
-  -- Training. Opposite-end target. Cannon not perfectly lined up.
+  -- Training. Super easy setup.
   Level
-    (Cannon (900, 900) 234.6 0)
+    (Cannon (200, 300) 34 0)
     []
     []
-    (Target (100, 100, 150, 150))
+    (Target ((800 - 75), (700 - 75), 150, 150))
     1
     0
-    (Just (Message "While aiming, don't forget to hold down the SHIFT or ALT keys to modify your rotation speed!" (100, 100) 350 R T))
+    (Just (Message "Timing is everything. The longer you charge the cannon, the faster the electron travels." (160, 160) 320 L B))
+
+  ----------------------------------------------------------------------------
+  -- Training. Opposite-end target. Cannon not perfectly lined up.
+  , Level
+    (Cannon (800, 800) 234.6 0)
+    []
+    []
+    (Target (150, 150, 150, 150))
+    1
+    0
+    (Just (Message "While aiming, don't forget to press SHIFT or ALT to modify the rotation speed." (150, 150) 320 R T))
 
   ----------------------------------------------------------------------------
   -- Training. A very introductory level with a big, close target. Helpful
@@ -104,19 +116,6 @@ allLevels =
     (Just (Message "It's a little touchy at close range. Best to do a putt." (100, 100) 400 L B))
 
   ----------------------------------------------------------------------------
-  -- Introduce a simple force field the player must work around. No
-  -- other obstacles.
-  , Level
-    (Cannon (500, 100) 90 0)
-    []
-    [ Phys.Field (370, 500) 50 200 -1
-    ]
-    (Target (450, 800, 100, 100))
-    2
-    0
-    (Just (Message "Force fields attract or repel an electron, depending on the charge." (100, 100) 300 R T))
-
-  ----------------------------------------------------------------------------
   -- In which we introduce the first barrier. Simple bank shot.
   , Level
     (Cannon (100, 100) 50 0)
@@ -126,11 +125,103 @@ allLevels =
     (Target (750, 100, 150, 150))
     2
     0
-    (Just (Message "You must work around barriers." (100, 100) 250 L B))
+    (Just (Message "Circumvent barriers by doing bank shots." (100, 100) 250 L B))
 
   ----------------------------------------------------------------------------
-  -- Setup to bounce off a sphere, through a shallow-angle opening that's
-  -- imposible to get through from the starting position.
+  -- Introduce a simple force field the player must work around. No other
+  -- obstacles.
+  , Level
+    (Cannon (500, 100) 90 0)
+    []
+    [ Phys.Field (370, 500) 50 200 -1
+    ]
+    (Target (450, 800, 100, 100))
+    2
+    0
+    (Just (Message "Electrons have a negative charge. Like repels like, while opposites attract. Electrical fields will either attract or repel your electron, depending on their charge." (100, 100) 330 R T))
+
+  ----------------------------------------------------------------------------
+  -- A trick level. Player presumably hasn't seen bouncy barriers yet so
+  -- thinks this level is impossible, since no openings to target are visible.
+  -- Little do they know that some barriers move.
+  , Level
+    (Cannon (500, 900) 270 0)
+    [ Phys.horizBarrier 51 400 222
+    , Phys.bouncyBarrier 387 400 111 0.01
+    , Phys.bouncyBarrier 613 400 111 0.01
+    , Phys.horizBarrier 725 400 222
+    ]
+    []
+    (Target (450, 100, 100, 100))
+    3
+    0
+    (Just (Message "Just go for it." (100, 200) 450 R B))
+
+  ----------------------------------------------------------------------------
+  -- Start from the center and try to bounce the ball into a narrow channel.
+  , Level
+    (Cannon (100, 100) 45 0)
+    [ Phys.vertBarrier 775 51 800
+    ]
+    []
+    (Target (825, 100, 75, 75))
+    2
+    0
+    Nothing
+
+  ----------------------------------------------------------------------------
+  -- Breeze through a channel of super-lightweight barriers.
+  , Level
+    (Cannon (900, 500) 180 0)
+    [ Phys.bouncyBarrier (300 + (140 * 0)) (500 + 80) 60 0.03
+    , Phys.bouncyBarrier (300 + (140 * 1)) (500 + 80) 60 0.03
+    , Phys.bouncyBarrier (300 + (140 * 2)) (500 + 80) 60 0.03
+    , Phys.bouncyBarrier (300 + (140 * 3)) (500 + 80) 60 0.03
+    , Phys.bouncyBarrier (300 + (140 * 0)) (500 - 80) 60 0.03
+    , Phys.bouncyBarrier (300 + (140 * 1)) (500 - 80) 60 0.03
+    , Phys.bouncyBarrier (300 + (140 * 2)) (500 - 80) 60 0.03
+    , Phys.bouncyBarrier (300 + (140 * 3)) (500 - 80) 60 0.03
+    ]
+    []
+    (Target (100, 450, 100, 100))
+    1
+    0
+    Nothing
+
+  ----------------------------------------------------------------------------
+  -- Try to bounce 90deg off a stationary barrier in order to land the ball on
+  -- the target.
+  , Level
+    (Cannon (100, 550) 14 0)
+    [ Phys.bubbleBarrier 700 700 200
+    , Phys.vertBarrier 500 51 450
+    ]
+    []
+    (Target (550, 100, 75, 75))
+    2
+    0
+    Nothing
+
+  ]
+
+intermediate : Course
+intermediate =
+  [
+
+  ----------------------------------------------------------------------------
+  -- Place the target in the middle of a repellant force field.
+  Level
+    (Cannon (100, 900) 325 0)
+    []
+    [ Phys.Field (500, 500) 80 240 -1
+    ]
+    (Target ((500 - (75 / 2)), (500 - (75 / 2)), 75, 75))
+    1
+    0
+    Nothing
+
+  ----------------------------------------------------------------------------
+  -- Shallow-angle aperture. Maybe bounce off nearby sphere?
   , Level
     (Cannon (880, 450) 202 0)
     [ Phys.horizBarrier 50 500 349
@@ -143,7 +234,7 @@ allLevels =
     (Target (800, 800, 100, 100))
     2
     0
-    (Just (Message "Note: Reflection angles off of spherical surfaces are mostly predictable; occurring in narrow probability distributions." (100, 100) 380 L B))
+    Nothing
 
   ----------------------------------------------------------------------------
   -- Double bank shot.
@@ -159,14 +250,131 @@ allLevels =
     Nothing
 
   ----------------------------------------------------------------------------
-  -- An attractive force field. You can *barely* skirt the field by doing a bank
-  -- shot actually.
+  -- An attractive force field. You can skirt the field by banking off the top.
   , Level
     (Cannon (900, 150) 170 0)
     []
     [ Phys.Field (500, 500) 200 417 1
     ]
     (Target (100, 100, 100, 100))
+    1
+    0
+    Nothing
+
+  ----------------------------------------------------------------------------
+  -- One big stationary spherical barrier that takes the whole screen. You
+  -- must navigate around margins.
+  , Level
+    (Cannon (170, 170) 45 0)
+    [ Phys.bubbleBarrier 500 500 400
+    ]
+    []
+    (Target (800, 800, 100, 100))
+    3
+    0
+    Nothing
+
+  ----------------------------------------------------------------------------
+  -- A difficult course consiting of both lines and stationary spheres.
+  , Level
+    (Cannon (150, 150) 0 0)
+    [ Phys.horizBarrier 500 500 450
+    , Phys.horizBarrier 50 300 450
+    , Phys.horizBarrier 50 700 450
+    , Phys.bubbleBarrier 250 500 125
+    , Phys.bubbleBarrier 750 275 125
+    , Phys.bubbleBarrier 750 725 125
+    ]
+    []
+    (Target (100, 800, 100, 100))
+    3
+    0
+    Nothing
+
+  ----------------------------------------------------------------------------
+  -- Really annoying level of bouncies that don't cooperate but which is
+  -- actually pretty consistently doable in three moves once you figure it out.
+  , Level
+    (Cannon (100, 100) 45 0)
+    [ Phys.bouncyBarrier 500 500 400 0.01
+    , Phys.bouncyBarrier 150 850 60 1.0
+    , Phys.bouncyBarrier 850 150 60 1.0
+    ]
+    []
+    (Target (800, 800, 100, 100))
+    3
+    0
+    Nothing
+
+  ----------------------------------------------------------------------------
+  -- Place a bouncy barrier over the target. The player  must try to dislodge
+  -- the barrier in order to score.
+  , Level
+    (Cannon (900, 100) 135 0)
+    [ Phys.bouncyBarrier 500 500 90 0.05
+    ]
+    []
+    (Target (450, 450, 100, 100))
+    1
+    0
+    Nothing
+
+  ----------------------------------------------------------------------------
+  -- Try to thread the needle through a narrow gap between two stationary
+  -- spherical barriers. Tricky!
+  , Level
+    (Cannon (500, 150) 90 0)
+    [ Phys.bubbleBarrier 379.5 500 100
+    , Phys.bubbleBarrier 620.5 500 100
+    ]
+    []
+    (Target (460, 700, 80, 80))
+    2
+    0
+    Nothing
+
+  ]
+
+advanced : Course
+advanced =
+  [
+
+  ----------------------------------------------------------------------------
+  -- A fun arrangement of a bubble barrier and an attractive field.
+  Level
+    (Cannon (100, 900) 315 0)
+    [ Phys.bubbleBarrier 330 330 200
+    ]
+    [ Phys.Field (650, 650) 120 240 3
+    ]
+    (Target (800, 100, 100, 100))
+    1
+    0
+    Nothing
+
+  ----------------------------------------------------------------------------
+  -- Ridiculous bouncies to the max. Good one to just pull back and fire with
+  -- full force.
+  , Level
+    (Cannon (100, 900) 315 0)
+    [ Phys.bouncyBarrier 150 330 70 0.02
+    , Phys.bouncyBarrier 325 330 70 0.02
+    , Phys.bouncyBarrier 500 330 70 0.02
+    , Phys.bouncyBarrier 675 330 70 0.02
+    , Phys.bouncyBarrier 850 330 70 0.02
+    , Phys.bouncyBarrier 150 500 70 0.02
+    , Phys.bouncyBarrier 325 500 70 0.02
+    , Phys.bouncyBarrier 500 500 70 0.02
+    , Phys.bouncyBarrier 675 500 70 0.02
+    , Phys.bouncyBarrier 850 500 70 0.02
+    , Phys.bouncyBarrier 150 670 70 0.02
+    , Phys.bouncyBarrier 325 670 70 0.02
+    , Phys.bouncyBarrier 500 670 70 0.02
+    , Phys.bouncyBarrier 675 670 70 0.02
+    , Phys.bouncyBarrier 850 670 70 0.02
+    ]
+    []
+    (Target (800, 100, 100, 100))
     2
     0
     Nothing
@@ -181,6 +389,23 @@ allLevels =
     []
     (Target (450, 140, 100, 100))
     2
+    0
+    Nothing
+
+  ----------------------------------------------------------------------------
+  -- Five stationary spheres that take up most of the playing field. Hard
+  -- because reflection angles are impossible to predict.
+  , Level
+    (Cannon (100, 500) 0 0)
+    [ Phys.bubbleBarrier 500 500 210
+    , Phys.bubbleBarrier 250 250 100
+    , Phys.bubbleBarrier 250 750 100
+    , Phys.bubbleBarrier 750 250 100
+    , Phys.bubbleBarrier 750 750 100
+    ]
+    []
+    (Target (800, 450, 100, 100))
+    3
     0
     Nothing
 
@@ -261,194 +486,12 @@ allLevels =
     3
     0
     Nothing
-
-  ----------------------------------------------------------------------------
-  -- Five stationary spheres that take up most of the playing field. Hard
-  -- because reflection angles are impossible to predict.
-  , Level
-    (Cannon (100, 500) 0 0)
-    [ Phys.bubbleBarrier 500 500 210
-    , Phys.bubbleBarrier 250 250 100
-    , Phys.bubbleBarrier 250 750 100
-    , Phys.bubbleBarrier 750 250 100
-    , Phys.bubbleBarrier 750 750 100
-    ]
-    []
-    (Target (800, 450, 100, 100))
-    3
-    0
-    Nothing
-
-  ----------------------------------------------------------------------------
-  -- One big stationary spherical barrier that takes the whole screen. You
-  -- must navigate around margins.
-  , Level
-    (Cannon (170, 170) 45 0)
-    [ Phys.bubbleBarrier 500 500 400
-    ]
-    []
-    (Target (800, 800, 100, 100))
-    3
-    0
-    Nothing
-
-  ----------------------------------------------------------------------------
-  -- A difficult course consiting of both lines and stationary spheres.
-  , Level
-    (Cannon (150, 150) 0 0)
-    [ Phys.horizBarrier 500 500 450
-    , Phys.horizBarrier 50 300 450
-    , Phys.horizBarrier 50 700 450
-    , Phys.bubbleBarrier 250 500 125
-    , Phys.bubbleBarrier 750 275 125
-    , Phys.bubbleBarrier 750 725 125
-    ]
-    []
-    (Target (100, 800, 100, 100))
-    3
-    0
-    Nothing
-
-  ----------------------------------------------------------------------------
-  -- A trick level. Player presumably hasn't seen bouncy barriers yet so
-  -- thinks this level is impossible, since no openings to target are visible.
-  , Level
-    (Cannon (500, 900) 270 0)
-    [ Phys.horizBarrier 51 400 222
-    , Phys.bouncyBarrier 387 400 111 0.01
-    , Phys.bouncyBarrier 613 400 111 0.01
-    , Phys.horizBarrier 725 400 222
-    ]
-    []
-    (Target (450, 100, 100, 100))
-    2
-    0
-    (Just (Message "Not all spherical barriers are as they appear..." (100, 100) 200 R B))
-
-  ----------------------------------------------------------------------------
-  -- Really annoying level of bouncies that don't cooperate but which is
-  -- actually pretty consistently par 3 once you figure it out.
-  , Level
-    (Cannon (100, 100) 45 0)
-    [ Phys.bouncyBarrier 500 500 400 0.01
-    , Phys.bouncyBarrier 150 850 60 1.0
-    , Phys.bouncyBarrier 850 150 60 1.0
-    ]
-    []
-    (Target (800, 800, 100, 100))
-    3
-    0
-    (Just (Message "There's a way to solve this one in three moves, usually." (500, 450) 250 C T))
-
-  ----------------------------------------------------------------------------
-  -- Ridiculous bouncies to the max. Good one to just pull back and fire with
-  -- full force.
-  , Level
-    (Cannon (100, 900) 315 0)
-    [ Phys.bouncyBarrier 150 330 70 0.02
-    , Phys.bouncyBarrier 325 330 70 0.02
-    , Phys.bouncyBarrier 500 330 70 0.02
-    , Phys.bouncyBarrier 675 330 70 0.02
-    , Phys.bouncyBarrier 850 330 70 0.02
-    , Phys.bouncyBarrier 150 500 70 0.02
-    , Phys.bouncyBarrier 325 500 70 0.02
-    , Phys.bouncyBarrier 500 500 70 0.02
-    , Phys.bouncyBarrier 675 500 70 0.02
-    , Phys.bouncyBarrier 850 500 70 0.02
-    , Phys.bouncyBarrier 150 670 70 0.02
-    , Phys.bouncyBarrier 325 670 70 0.02
-    , Phys.bouncyBarrier 500 670 70 0.02
-    , Phys.bouncyBarrier 675 670 70 0.02
-    , Phys.bouncyBarrier 850 670 70 0.02
-    ]
-    []
-    (Target (800, 100, 100, 100))
-    2
-    0
-    Nothing
-
-  ----------------------------------------------------------------------------
-  -- Place the target in the middle of a repellant force field.
-  , Level
-    (Cannon (100, 900) 325 0)
-    []
-    [ Phys.Field (500, 500) 80 240 -1
-    ]
-    (Target (450, 450, 100, 100))
-    1
-    0
-    Nothing
-
-  ----------------------------------------------------------------------------
-  -- Start from the center and try to bounce the ball into a narrow channel.
-  , Level
-    (Cannon (100, 100) 45 0)
-    [ Phys.vertBarrier 775 51 800
-    ]
-    []
-    (Target (825, 100, 75, 75))
-    1
-    0
-    Nothing
-
-  ----------------------------------------------------------------------------
-  -- Try to bounce 90deg off a stationary barrier in order to land the ball on
-  -- the target.
-  , Level
-    (Cannon (100, 550) 14 0)
-    [ Phys.bubbleBarrier 700 700 200
-    , Phys.vertBarrier 500 51 450
-    ]
-    []
-    (Target (550, 100, 75, 75))
-    1
-    0
-    Nothing
-
-  ----------------------------------------------------------------------------
-  -- Place a bouncy barrier over the target. The player  must try to dislodge
-  -- the barrier in order to score.
-  , Level
-    (Cannon (900, 100) 135 0)
-    [ Phys.bouncyBarrier 500 500 90 0.05
-    ]
-    []
-    (Target (450, 450, 100, 100))
-    1
-    0
-    Nothing
-
-  ----------------------------------------------------------------------------
-  -- Try to thread the needle through a narrow gap between two stationary
-  -- spherical barriers. Tricky!
-  , Level
-    (Cannon (500, 150) 90 0)
-    [ Phys.bubbleBarrier 379.5 500 100
-    , Phys.bubbleBarrier 620.5 500 100
-    ]
-    []
-    (Target (460, 700, 80, 80))
-    2
-    0
-    Nothing
-
-  ----------------------------------------------------------------------------
-  -- Breeze through a channel of super-lightweight barriers.
-  , Level
-    (Cannon (900, 500) 180 0)
-    [ Phys.bouncyBarrier (300 + (140 * 0)) (500 + 80) 60 0.03
-    , Phys.bouncyBarrier (300 + (140 * 1)) (500 + 80) 60 0.03
-    , Phys.bouncyBarrier (300 + (140 * 2)) (500 + 80) 60 0.03
-    , Phys.bouncyBarrier (300 + (140 * 3)) (500 + 80) 60 0.03
-    , Phys.bouncyBarrier (300 + (140 * 0)) (500 - 80) 60 0.03
-    , Phys.bouncyBarrier (300 + (140 * 1)) (500 - 80) 60 0.03
-    , Phys.bouncyBarrier (300 + (140 * 2)) (500 - 80) 60 0.03
-    , Phys.bouncyBarrier (300 + (140 * 3)) (500 - 80) 60 0.03
-    ]
-    []
-    (Target (100, 450, 100, 100))
-    1
-    0
-    Nothing
-
   ]
+
+courses : Courses
+courses =
+  Dict.fromList
+    [ ("Beginner", beginner)
+    , ("Intermediate", intermediate)
+    , ("Advanced", advanced)
+    ]
