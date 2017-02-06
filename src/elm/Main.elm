@@ -49,13 +49,6 @@ type alias Model =
   , finishedLevels : List Level
   }
 
-type PathCommand
-  = M Float Float
-  | L Float Float
-  | H Float
-  | V Float
-  | Z
-
 init : (Model, Cmd Msg)
 init =
   let
@@ -250,7 +243,7 @@ advanceBall level model =
   case model.ball of
     Just ball ->
       let
-        (isAtRest, isOOB, newBall, newBarriers) = Phys.step ball level.barriers
+        (isAtRest, isOOB, newBall, newBarriers) = Phys.step ball level.barriers level.fields
         newLevel = { level | barriers = newBarriers }
         maybeNewBall = if isAtRest then Nothing else Just newBall
       in
@@ -425,6 +418,7 @@ view model =
       ]
       [ playingFieldWrapper model.playport
         [ boundary
+        , drawFields model
         , drawBarriers model
         , drawTarget model
         , drawBall model.ball
@@ -432,11 +426,64 @@ view model =
         , drawTransition model
         , drawSplashBouncers model
         ]
+      , drawLevelMessage model
       , drawSplash model
       , drawEndSplash model (attempts, levelPar) (currentLevel, levelCount) (totalScore, totalPar, parCompare)
       , drawTallies model (attempts, levelPar) (currentLevel, levelCount) (totalScore, totalPar, parCompare)
       , help
       , copyright
+      ]
+
+drawLevelMessage : Model -> Html Msg
+drawLevelMessage model =
+  case model.phase of
+    Playing level ->
+      case level.message of
+        Nothing ->
+          Html.p [] []
+        Just message ->
+          let
+            (x, y) = message.pos
+            wPct = (toString ((message.width / 1000) * 100)) ++ "%"
+            yPct = (toString ((y / 1000) * 100)) ++ "%"
+            xPct = case message.xAnchor of
+              Level.C ->
+                (toString (((x - (message.width / 2)) / 1000) * 100)) ++ "%"
+              _ ->
+                (toString ((x / 1000) * 100)) ++ "%"
+            xAnchor = case message.xAnchor of
+              Level.L -> "left"
+              Level.R -> "right"
+              Level.C -> "left"
+            yAnchor = case message.yAnchor of
+              Level.T -> "top"
+              Level.B -> "bottom"
+          in
+            Html.p
+              [ HAttr.class "level-message", HAttr.style [(xAnchor, xPct), (yAnchor, yPct), ("max-width",wPct)] ]
+              [ Html.text message.text ]
+    _ ->
+      Html.p [] []
+
+drawFields : Model -> Svg Msg
+drawFields model =
+  case model.phase of
+    Playing level ->
+      group (List.map drawField level.fields)
+    _ ->
+      emptyGroup
+
+drawField : Phys.Field -> Svg Msg
+drawField field =
+  let
+    (x, y) = field.pos
+    tPosX = x
+    tPosY = y - (field.outerRadius + 10)
+  in
+    group
+      [ drawCirc "field field-inner" field.pos field.innerRadius
+      , drawCirc "field field-outer" field.pos field.outerRadius
+      , Svg.text_ [attrX tPosX, attrY tPosY, attrClass "field field-label"] [Svg.text ("charge: " ++ (toString field.strength))]
       ]
 
 copyright : Html Msg
@@ -565,19 +612,19 @@ drawEndSplash model (attempts, levelPar) (currentLevel, levelCount) (totalScore,
         absParCompare = abs parCompare
         message = if parCompare <= -3 then "Fantastic!"
           else if parCompare <= -2 then "Terrific!"
-          else if parCompare <= -1 then "Nice Job!"
-          else if parCompare <= 0 then "Well Done"
-          else "Game Over"
+          else if parCompare <= -1 then "Nicely Done!"
+          else if parCompare <= 0 then "Well Done."
+          else "Game Over."
         parMessage = if parCompare < 0 then Html.span [] [ Html.text "You shot ", val absParCompare, Html.text " under par."]
           else if parCompare == 0 then Html.text "You got par."
           else Html.span [] [ Html.text "You shot ", val absParCompare, Html.text " over par."]
         parFollowup = if parCompare <= -4 then "I suspect you cheated but I can't prove it."
-          else if parCompare == -3 then "Few will be able to top that."
-          else if parCompare == -2 then "Your foo abides in love."
+          else if parCompare == -3 then "Heisenberg was wrong, apparently."
+          else if parCompare == -2 then "I stand in awe of your prowess."
           else if parCompare == -1 then "Hats off to you."
           else if parCompare == 0 then "Solid game."
           else if parCompare == 1 then "That seems respectable."
-          else if parCompare <= 3 then "Not bad for a beginner."
+          else if parCompare <= 3 then "That's not bad for a beginner."
           else if parCompare <= 6 then "You need to work on your foo."
           else if parCompare <= 10 then "...and you call yourself a scientist."
           else "Hint: lower scores are better."
@@ -783,24 +830,6 @@ drawTargetCorner origX origY extX extY =
 drawTargetLine : String -> Svg Msg
 drawTargetLine d =
   Svg.path [SAttr.d d, SAttr.class "target-corner"] []
-
-drawPath : List PathCommand -> String
-drawPath commands =
-  case commands of
-    command :: rest ->
-      case command of
-        M x y ->
-          " m" ++ (toString x) ++ " " ++ (toString y) ++ (drawPath rest)
-        L x y ->
-          " l" ++ (toString x) ++ " " ++ (toString y) ++ (drawPath rest)
-        H len ->
-          " h" ++ (toString len) ++ (drawPath rest)
-        V len ->
-          " v" ++ (toString len) ++ (drawPath rest)
-        Z ->
-          " z" ++ (drawPath rest)
-    [] ->
-      ""
 
 drawBall : Maybe Phys.Obj -> Svg Msg
 drawBall ball =

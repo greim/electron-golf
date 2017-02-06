@@ -276,3 +276,36 @@ circle.ball {
   stroke-width: 2px;
   fill: url(#spherical-gradient);
 }
+
+circle.field {
+  fill: transparent;
+  stroke: #f90;
+  stroke-width: 1px;
+  stroke-dasharray: 5, 5;
+  opacity: 0.5;
+}
+
+circle.field.field-inner {
+  fill: url(#field-center-gradient);
+}
+
+text.field {
+  fill: #f90;
+  font-size: 20px;
+  opacity: .25;
+  text-anchor: middle;
+}
+
+p.level-message {
+  position: absolute;
+  background: #333;
+  border: 1px solid #888;
+  margin: 0;
+  box-sizing: border-box;
+  color: #fff;
+  font-size: 2em;
+  line-height: 1.4;
+  padding: .75em 1em;
+  white-space: pre-wrap;
+  opacity: .5;
+}
