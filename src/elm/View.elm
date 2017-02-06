@@ -5,9 +5,9 @@ module View exposing (..)
 
 -- import ----------------------------------------------------------------------
 
+--import Html.Events as HEv
 import Html exposing (Html)
 import Html.Attributes as HAttr
---import Html.Events as HEv
 import Svg exposing (Svg)
 import Svg.Attributes as SAttr
 import Phys exposing (areaWidth, areaHeight)
