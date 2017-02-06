@@ -55,7 +55,7 @@ playingFieldWrapper playport children =
 blurb : Html msg
 blurb =
   Markdown.toHtml [HAttr.id "blurb"] """
-Hi, my name is Greg Reimer. I thought it would be fun to try out the [Elm programming language](http://elm-lang.org/) by creating a video game, and this is the result. If you liked it, follow me on [Twitter](https://twitter.com/), or star the repo on [GitHub](https://github.com/greim/electron-golf).
+Hi, my name is Greg Reimer. I thought it would be fun to try out the [Elm programming language](http://elm-lang.org/) by creating a video game, and this is the result. If you liked it, follow me on [Twitter](https://twitter.com/) or star the repo on [GitHub](https://github.com/greim/electron-golf).
 """
 
 defs : Svg msg
