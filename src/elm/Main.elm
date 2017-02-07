@@ -25,6 +25,7 @@ import Phase exposing (..)
 import View exposing (..)
 import Ease
 import Layout exposing (Layout)
+import Gfx
 
 -- main ------------------------------------------------------------------------
 
@@ -886,43 +887,7 @@ drawCannon model =
 
 drawTheCannon : Cannon -> Svg Msg
 drawTheCannon cannon =
-  let
-    (x, y) = cannon.pos
-    classAttr = SAttr.class "cannon"
-    transformAttr = SAttr.transform ("translate(" ++ (toString x) ++ "," ++ (toString y) ++ ") rotate(" ++ (toString cannon.angle) ++ ")")
-    powerRadius = (cannon.power * 2.7) ^ 1.2
-    powerOpacity = (min 1.0 (1.0 - (powerRadius / 1000))) * 0.2
-    opacityStyle = "opacity:" ++ (toString powerOpacity)
-  in
-    Svg.g
-      [ transformAttr
-      , classAttr
-      ]
-      [ drawBox "barrel" (20, -10) (10, 20)
-      , drawBox "barrel" (32, -11) (6, 22)
-      , drawCirc "cannon-body" (0, 0) 20
-      , drawLine "launch-path" (20, 0) (2100, 0)
-      , drawCircExt "power-radius" (0, 0) (powerRadius * 2) [SAttr.style opacityStyle, SAttr.fill "url(#power-radius-gradient)"]
-      , drawPowerGauge cannon.power
-      ]
-
-drawPowerGauge : Float -> Svg Msg
-drawPowerGauge power =
-  case power of
-    0 ->
-      emptyGroup
-    _ ->
-      Svg.g
-        [ SAttr.class "power-gauge"
-        ]
-        [ drawCirc "cannon-drawback" (-power, 0) 16
-        , drawCirc "gauge-dot-bg" (0, 0) 15
-        , drawCirc "gauge-dot-bg" (-power, 0) 15
-        , drawLineHoriz "gauge-stretch-bg" (-power, 0) power
-        , drawLineHoriz "gauge-stretch" (-power, 0) power
-        , drawCirc "gauge-dot" (0, 0) 8
-        , drawCirc "gauge-dot" (-power, 0) 8
-        ]
+  Gfx.cannon cannon.pos cannon.power cannon.angle
 
 drawBarriers : Model -> Svg Msg
 drawBarriers model =
