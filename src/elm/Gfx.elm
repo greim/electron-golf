@@ -7,15 +7,25 @@ A library of SVG renderers.
 
 module Gfx exposing
   ( cannon
+  , target
+  , ball
   )
 
 -- imports ---------------------------------------------------------------------
 
+import Debug exposing (log)
 import Svg exposing (Svg, Attribute)
 import Svg.Attributes as Attr
-import Svg.Lazy exposing (lazy)
+import Svg.Lazy exposing (lazy, lazy2, lazy3)
 
 -- types -----------------------------------------------------------------------
+
+type PathCommand
+  = M Float Float
+  | L Float Float
+  | H Float
+  | V Float
+  | Z
 
 -- functions -------------------------------------------------------------------
 
@@ -29,12 +39,18 @@ cannon (cx, cy) power angle =
       [ Attr.transform (traStr ++ rotStr)
       , Attr.class "cannon"
       ]
-      [ box "barrel" (20, -10) (10, 20)
-      , box "barrel" (32, -11) (6, 22)
-      , circ "cannon-body" (0, 0) 20
-      , line "launch-path" (20, 0) (2100, 0)
+      [ basicCannon
       , cannonPower power
       ]
+
+basicCannon : Svg msg
+basicCannon =
+  Svg.g []
+    [ box "barrel" (20, -10) (10, 20)
+    , box "barrel" (32, -11) (6, 22)
+    , circ "cannon-body" (0, 0) 20
+    , line "launch-path" (20, 0) (2100, 0)
+    ]
 
 cannonPower : Float -> Svg msg
 cannonPower power =
@@ -60,7 +76,71 @@ cannonPower power =
           , circ "gauge-dot" (-power, 0) 8
           ]
 
+--------------------------------------------------------------------------------
+
+ball : (Float, Float) -> Float -> Svg msg
+ball pos r =
+  circExt "ball" pos r [ sphereFill ]
+
+--------------------------------------------------------------------------------
+
+target : (Float, Float) -> Float -> Float -> Svg msg
+target (tx, ty) protonSize size =
+  let
+    rFixed = (size / 2) * 0.65
+    r = rFixed * protonSize
+  in
+    Svg.g
+      [ Attr.class "target"
+      ]
+      [ emptyTargetLazy tx ty size
+      , circExt "proton" (tx, ty) r [ sphereFill ]
+      ]
+
+emptyTargetLazy : Float -> Float -> Float -> Svg msg
+emptyTargetLazy = lazy3 emptyTarget
+
+emptyTarget : Float -> Float -> Float -> Svg msg
+emptyTarget tx ty size =
+  let
+    half = size / 2
+    x = tx - half
+    y = ty - half
+    translate = "translate(" ++ (toString x) ++ " " ++ (toString y) ++ ")"
+    rFixed = half * 0.65
+  in
+    Svg.g
+      [ Attr.transform translate
+      ]
+      [ box "target-bound" (0, 0) (size, size)
+      , targetCorner 0 0 20 20
+      , targetCorner size 0 -20 20
+      , targetCorner size size -20 -20
+      , targetCorner 0 size 20 -20
+      , circ "proton-surround" (half, half) rFixed
+      , path "target-corner" [ M half -5, V 10, V -5, Z ]
+      , path "target-corner" [ M half (size + 5), V -10, V 5, Z ]
+      , path "target-corner" [ M -5 half, H 10, H -5, Z ]
+      , path "target-corner" [ M (size + 5) half, H -10, H 5, Z ]
+      ]
+
+targetCorner : Float -> Float -> Float -> Float -> Svg msg
+targetCorner origX origY extX extY =
+  let
+    commands =
+      [ M origX (origY + extY)
+      , V -extY
+      , H extX
+      , H -extX
+      , Z
+      ]
+  in
+    path "target-corner" commands
+
 -- helpers ---------------------------------------------------------------------
+
+sphereFill : Attribute msg
+sphereFill = Attr.fill "url(#spherical-gradient)"
 
 line : String -> (Float, Float) -> (Float, Float) -> Svg msg
 line cls (x1, y1) (x2, y2) =
@@ -213,3 +293,25 @@ translateString x y =
 rotateString : number -> String
 rotateString angle =
   "rotate(" ++ (toString angle) ++ ")"
+
+path : String -> List PathCommand -> Svg msg
+path cls commands =
+  Svg.path [Attr.class cls, Attr.d (pathString commands)] []
+
+pathString : List PathCommand -> String
+pathString commands =
+  case commands of
+    command :: rest ->
+      case command of
+        M x y ->
+          " m" ++ (toString x) ++ " " ++ (toString y) ++ (pathString rest)
+        L x y ->
+          " l" ++ (toString x) ++ " " ++ (toString y) ++ (pathString rest)
+        H len ->
+          " h" ++ (toString len) ++ (pathString rest)
+        V len ->
+          " v" ++ (toString len) ++ (pathString rest)
+        Z ->
+          " z" ++ (pathString rest)
+    [] ->
+      ""

@@ -263,10 +263,11 @@ text.par-label {
 }
 
 .target {
-  line.target-bound {
+  .target-bound {
     stroke: #fff;
     stroke-width: 1px;
     opacity: .25;
+    fill: transparent;
   }
   path.target-corner {
     stroke: #fff;

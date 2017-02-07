@@ -8,6 +8,7 @@ import Html exposing (Html)
 import Html.Attributes as HAttr
 import Svg exposing (Svg)
 import Svg.Attributes as SAttr
+import Svg.Lazy exposing (lazy)
 import Window
 import Task
 import Process
@@ -741,7 +742,7 @@ drawMigration level (x1, y1) (x2, y2) step =
     group
       [ drawTheCannon level.cannon
       , drawTheTarget 1 level.target
-      , drawTheBall (xTween, yTween) 22
+      , Gfx.ball (xTween, yTween) 22
       ]
 
 drawAbsorption : Level -> (Float, Float) -> Float -> Svg Msg
@@ -754,7 +755,7 @@ drawAbsorption level (cx, cy) step =
     group
       [ drawTheCannon level.cannon
       , drawTheTarget (1 - prog) level.target
-      , drawTheBall (cx, cy) r
+      , Gfx.ball (cx, cy) r
       ]
 
 drawExplosion : Level -> (Float, Float) -> Float -> Svg Msg
@@ -811,58 +812,7 @@ drawTarget model =
 
 drawTheTarget : Float -> Target -> Svg Msg
 drawTheTarget protonSize target =
-  let
-    (tx, ty) = target.pos
-    x = tx - target.size / 2
-    y = ty - target.size / 2
-    width = target.size
-    height = target.size
-    translate = "translate(" ++ (toString x) ++ " " ++ (toString y) ++ ")"
-    cx = width / 2
-    cy = height / 2
-    rFixed = ((min width height) / 2) * 0.65
-    r = rFixed * protonSize
-  in
-    Svg.g
-      [ SAttr.transform translate
-      , SAttr.class "target"
-      ]
-      [ drawTargetBound 0     0      width 0
-      , drawTargetBound width 0      width height
-      , drawTargetBound width height 0     height
-      , drawTargetBound 0     height 0     0
-      , drawTargetCorner (0) (0) (20) (20)
-      , drawTargetCorner (width) (0) (-20) (20)
-      , drawTargetCorner (width) (height) (-20) (-20)
-      , drawTargetCorner (0) (height) (20) (-20)
-      , drawCirc "proton-surround" (cx, cy) rFixed
-      , drawTargetLine (drawPath [ M (width / 2) -5,           V 10,  V -5, Z ])
-      , drawTargetLine (drawPath [ M (width / 2) (height + 5), V -10, V 5,  Z ])
-      , drawTargetLine (drawPath [ M -5          (height / 2), H 10,  H -5, Z ])
-      , drawTargetLine (drawPath [ M (width + 5) (height / 2), H -10, H 5,  Z ])
-      , drawCircExt "proton" (cx, cy) r [SAttr.fill "url(#spherical-gradient)"]
-      ]
-
-drawTargetBound : Float -> Float -> Float -> Float -> Svg Msg
-drawTargetBound x1 y1 x2 y2 =
-  drawLine "target-bound" (x1, y1) (x2, y2)
-
-drawTargetCorner : Float -> Float -> Float -> Float -> Svg Msg
-drawTargetCorner origX origY extX extY =
-  let
-    d = drawPath
-      [ M origX (origY + extY)
-      , V -extY
-      , H extX
-      , H -extX
-      , Z
-      ]
-  in
-    Svg.path [SAttr.d d, SAttr.class "target-corner"] []
-
-drawTargetLine : String -> Svg Msg
-drawTargetLine d =
-  Svg.path [SAttr.d d, SAttr.class "target-corner"] []
+  Gfx.target target.pos protonSize target.size
 
 drawBall : Maybe Phys.Obj -> Svg Msg
 drawBall ball =
@@ -870,15 +820,11 @@ drawBall ball =
     Just ball ->
       case ball.shape of
         Bodies.Bubble radius ->
-          drawTheBall ball.pos radius
+          Gfx.ball ball.pos radius
         Bodies.Box vec ->
           emptyGroup
     Nothing ->
       emptyGroup
-
-drawTheBall : (Float, Float) -> Float -> Svg msg
-drawTheBall pos r =
-  drawCircExt "ball" pos r [SAttr.fill "url(#spherical-gradient)"]
 
 drawCannon : Model -> Svg Msg
 drawCannon model =
@@ -894,8 +840,12 @@ drawTheCannon cannon =
 drawBarriers : Model -> Svg Msg
 drawBarriers model =
   case model.phase of
-    Playing level -> group (List.map drawBarrier level.barriers)
+    Playing level -> lazy drawTheBarriers level.barriers
     _ -> emptyGroup
+
+drawTheBarriers : List Phys.Obj -> Svg Msg
+drawTheBarriers barriers =
+  group (List.map drawBarrier barriers)
 
 drawBarrier : Phys.Obj -> Svg Msg
 drawBarrier barrier =
