@@ -218,9 +218,7 @@ evaluatePlay ball level model =
       -- move and re-orient cannon
       cannon = level.cannon
       (x1, y1) = ball.pos
-      (tx, ty, tw, th) = level.target.pos
-      x2 = tx + (tw / 2)
-      y2 = ty + (th / 2)
+      (x2, y2) = level.target.pos
       fudge = toFloat (((round model.time) % 120) - 60)
       angle = (atan2 (y2 - y1) (x2 - x1)) * (360 / (pi * 2))
       newCannon = { cannon | pos = ball.pos, angle = angle + fudge }
@@ -235,12 +233,12 @@ ballIsInTarget ball target =
   case ball.shape of
     Bodies.Bubble radius ->
       let
-        (tx, ty, tw, th) = target.pos
+        (tx, ty) = target.pos
         (bx, by) = ball.pos
-        boundLeft = tx
-        boundRight = (tx + tw)
-        boundHi = ty
-        boundLo = (ty + th)
+        boundLeft = tx - target.size / 2
+        boundRight = tx + target.size / 2
+        boundHi = ty - target.size / 2
+        boundLo = ty + target.size / 2
       in
         not (bx < boundLeft || bx > boundRight || by < boundHi || by > boundLo)
     Bodies.Box ext ->
@@ -712,13 +710,13 @@ drawTheTransition : Transition -> Level -> Maybe Level -> Svg Msg
 drawTheTransition transition oldLevel maybeNewLevel =
   case transition.phase of
     Transition.Migrating step ->
-      let end = Target.center oldLevel.target
+      let end = oldLevel.target.pos
       in drawMigration oldLevel transition.actionPoint end step
     Transition.Absorbing step ->
-      let point = Target.center oldLevel.target
+      let point = oldLevel.target.pos
       in drawAbsorption oldLevel point step
     Transition.Exploding step ->
-      let point = Target.center oldLevel.target
+      let point = oldLevel.target.pos
       in drawExplosion oldLevel point step
     Transition.Messaging step ->
       drawMessage oldLevel transition.message step
@@ -814,7 +812,11 @@ drawTarget model =
 drawTheTarget : Float -> Target -> Svg Msg
 drawTheTarget protonSize target =
   let
-    (x, y, width, height) = target.pos
+    (tx, ty) = target.pos
+    x = tx - target.size / 2
+    y = ty - target.size / 2
+    width = target.size
+    height = target.size
     translate = "translate(" ++ (toString x) ++ " " ++ (toString y) ++ ")"
     cx = width / 2
     cy = height / 2

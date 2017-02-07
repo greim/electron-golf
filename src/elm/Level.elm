@@ -87,7 +87,7 @@ beginner =
     (Cannon (200, 300) 34 0)
     []
     []
-    (Target ((800 - 75), (700 - 75), 150, 150))
+    (Target (800, 700) 150)
     1
     0
     (Just (Message "Timing is everything. The longer you charge the cannon, the faster the electron travels." (160, 160) 320 L B))
@@ -98,7 +98,7 @@ beginner =
     (Cannon (800, 800) 234.6 0)
     []
     []
-    (Target (150, 150, 150, 150))
+    (Target (225, 225) 150)
     1
     0
     (Just (Message "While aiming, don't forget to press SHIFT or ALT to modify the rotation speed." (150, 150) 320 R T))
@@ -110,7 +110,7 @@ beginner =
     (Cannon (100, 100) 10 0)
     []
     []
-    (Target (200, 200, 150, 150))
+    (Target (275, 275) 150)
     1
     0
     (Just (Message "It's a little touchy at close range. Best to do a putt." (100, 100) 400 L B))
@@ -122,10 +122,10 @@ beginner =
     [ Phys.vertBarrier 500 50 600
     ]
     []
-    (Target (750, 100, 150, 150))
+    (Target (825, 175) 150)
     2
     0
-    (Just (Message "Circumvent barriers by doing bank shots." (100, 100) 250 L B))
+    (Just (Message "Circumvent barriers with bank shots." (100, 100) 250 L B))
 
   ----------------------------------------------------------------------------
   -- Introduce a simple force field the player must work around. No other
@@ -135,7 +135,7 @@ beginner =
     []
     [ Phys.Field (370, 500) 50 200 -1
     ]
-    (Target (450, 800, 100, 100))
+    (Target (500, 850) 100)
     2
     0
     (Just (Message "Electrons have a negative charge. Like repels like, while opposites attract. Electrical fields will either attract or repel your electron, depending on their charge." (100, 100) 330 R T))
@@ -152,7 +152,7 @@ beginner =
     , Phys.horizBarrier 725 400 222
     ]
     []
-    (Target (450, 100, 100, 100))
+    (Target (500, 150) 100)
     3
     0
     (Just (Message "Just go for it." (100, 200) 450 R B))
@@ -164,7 +164,7 @@ beginner =
     [ Phys.vertBarrier 775 51 800
     ]
     []
-    (Target (825, 100, 75, 75))
+    (Target (862.5, 137.5) 75)
     2
     0
     Nothing
@@ -183,7 +183,7 @@ beginner =
     , Phys.bouncyBarrier (300 + (140 * 3)) (500 - 80) 60 0.03
     ]
     []
-    (Target (100, 450, 100, 100))
+    (Target (150, 500) 100)
     1
     0
     Nothing
@@ -197,7 +197,7 @@ beginner =
     , Phys.vertBarrier 500 51 450
     ]
     []
-    (Target (550, 100, 75, 75))
+    (Target (587.5, 137.5) 75)
     2
     0
     Nothing
@@ -215,7 +215,7 @@ intermediate =
     []
     [ Phys.Field (500, 500) 80 240 -1
     ]
-    (Target ((500 - (75 / 2)), (500 - (75 / 2)), 75, 75))
+    (Target (500.5, 500.5) 75)
     1
     0
     Nothing
@@ -231,7 +231,7 @@ intermediate =
     , Phys.bubbleBarrier 500 200 100
     ]
     []
-    (Target (800, 800, 100, 100))
+    (Target (850, 850) 100)
     2
     0
     Nothing
@@ -244,7 +244,7 @@ intermediate =
     , Phys.vertBarrier 666 332 618
     ]
     []
-    (Target (100, 150, 100, 100))
+    (Target (150, 200) 100)
     2
     0
     Nothing
@@ -256,7 +256,7 @@ intermediate =
     []
     [ Phys.Field (500, 500) 200 417 1
     ]
-    (Target (100, 100, 100, 100))
+    (Target (150, 150) 100)
     1
     0
     Nothing
@@ -269,7 +269,7 @@ intermediate =
     [ Phys.bubbleBarrier 500 500 400
     ]
     []
-    (Target (800, 800, 100, 100))
+    (Target (850, 850) 100)
     3
     0
     Nothing
@@ -286,7 +286,7 @@ intermediate =
     , Phys.bubbleBarrier 750 725 125
     ]
     []
-    (Target (100, 800, 100, 100))
+    (Target (150, 850) 100)
     3
     0
     Nothing
@@ -301,7 +301,7 @@ intermediate =
     , Phys.bouncyBarrier 850 150 60 1.0
     ]
     []
-    (Target (800, 800, 100, 100))
+    (Target (850, 850) 100)
     3
     0
     Nothing
@@ -314,7 +314,7 @@ intermediate =
     [ Phys.bouncyBarrier 500 500 90 0.05
     ]
     []
-    (Target (450, 450, 100, 100))
+    (Target (500, 500) 100)
     1
     0
     Nothing
@@ -328,7 +328,7 @@ intermediate =
     , Phys.bubbleBarrier 620.5 500 100
     ]
     []
-    (Target (460, 700, 80, 80))
+    (Target (500, 740) 80)
     2
     0
     Nothing
@@ -347,7 +347,7 @@ advanced =
     ]
     [ Phys.Field (650, 650) 120 240 3
     ]
-    (Target (800, 100, 100, 100))
+    (Target (850, 150) 100)
     1
     0
     Nothing
@@ -374,7 +374,7 @@ advanced =
     , Phys.bouncyBarrier 850 670 70 0.02
     ]
     []
-    (Target (800, 100, 100, 100))
+    (Target (850, 150) 100)
     2
     0
     Nothing
@@ -387,7 +387,7 @@ advanced =
     , Phys.horizBarrier 200 666 600
     ]
     []
-    (Target (450, 140, 100, 100))
+    (Target (500, 190) 100)
     2
     0
     Nothing
@@ -404,7 +404,7 @@ advanced =
     , Phys.bubbleBarrier 750 750 100
     ]
     []
-    (Target (800, 450, 100, 100))
+    (Target (850, 500) 100)
     3
     0
     Nothing
@@ -418,7 +418,7 @@ advanced =
     , Phys.bubbleBarrier 900 100 25
     ]
     []
-    (Target (690, 800, 100, 100))
+    (Target (740, 850) 100)
     2
     0
     Nothing
@@ -434,7 +434,7 @@ advanced =
     , Phys.bubbleBarrier 800 802 20
     ]
     []
-    (Target (600, 300, 100, 100))
+    (Target (650, 350) 100)
     2
     0
     Nothing
@@ -450,7 +450,7 @@ advanced =
     , Phys.vertBarrier 800 570 230
     ]
     []
-    (Target (450, 450, 100, 100))
+    (Target (500, 500) 100)
     3
     0
     Nothing
@@ -465,7 +465,7 @@ advanced =
     , Phys.vertBarrier 200 200 200
     ]
     []
-    (Target (75, 825, 100, 100))
+    (Target (125, 875) 100)
     3
     0
     Nothing
@@ -482,7 +482,7 @@ advanced =
     , Phys.horizBarrier 575 750 375
     ]
     []
-    (Target (800, 800, 100, 100))
+    (Target (850, 850) 100)
     3
     0
     Nothing
