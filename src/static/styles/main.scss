@@ -191,10 +191,6 @@ rect.transition-blankout {
   stroke-width: 0;
 }
 
-circle.transition-explosion {
-  fill: url(#explosion-gradient);
-}
-
 text.transition-message {
   text-anchor: middle;
   dominant-baseline: middle;
@@ -218,7 +214,7 @@ text.par-label {
 }
 
 .cannon {
-  circle {
+  circle.cannon-body {
     stroke: #fff;
     stroke-width: 10px;
     fill: transparent;
@@ -226,7 +222,6 @@ text.par-label {
   circle.power-radius {
     stroke: rgba(0, 255, 0, 0.25);
     stroke-width: 0;
-    fill: url(#power-radius-gradient);
   }
   rect.barrel {
     fill: #fff;
@@ -278,7 +273,6 @@ text.par-label {
     stroke-linejoin: round;
   }
   circle.proton {
-    fill: url(#spherical-gradient);
     stroke: #999;
     stroke-width: 2px;
   }
@@ -300,19 +294,18 @@ text.par-label {
 circle.ball {
   stroke: #999;
   stroke-width: 2px;
-  fill: url(#spherical-gradient);
 }
 
-circle.field {
-  fill: transparent;
+circle.field-outer,
+circle.field-inner {
   stroke: #f90;
   stroke-width: 1px;
   stroke-dasharray: 5, 5;
   opacity: 0.5;
 }
 
-circle.field.field-inner {
-  fill: url(#field-center-gradient);
+circle.field-outer {
+  fill: transparent;
 }
 
 text.field {

@@ -497,8 +497,8 @@ drawField field =
       "+" ++ (toString field.strength)
   in
     group
-      [ drawCirc "field field-inner" field.pos field.innerRadius
-      , drawCirc "field field-outer" field.pos field.outerRadius
+      [ drawCircExt "field-inner" field.pos field.innerRadius [SAttr.fill "url(#field-center-gradient)"]
+      , drawCirc "field-outer" field.pos field.outerRadius
       , Svg.text_ [attrX tPosX, attrY tPosY, attrClass "field field-label"] [Svg.text ("charge: " ++ charge)]
       ]
 
@@ -770,7 +770,7 @@ drawExplosion level pos step =
     group
       [ drawTheCannon level.cannon
       , drawTheTarget 0 level.target
-      , drawCircExt "transition-explosion" pos r [SAttr.style style]
+      , drawCircExt "transition-explosion" pos r [SAttr.style style, SAttr.fill "url(#explosion-gradient)"]
       ]
 
 drawMessage : Level -> String -> Float -> Svg Msg
@@ -837,7 +837,7 @@ drawTheTarget protonSize target =
       , drawTargetLine (drawPath [ M (width / 2) (height + 5), V -10, V 5,  Z ])
       , drawTargetLine (drawPath [ M -5          (height / 2), H 10,  H -5, Z ])
       , drawTargetLine (drawPath [ M (width + 5) (height / 2), H -10, H 5,  Z ])
-      , drawCirc "proton" (cx, cy) r
+      , drawCircExt "proton" (cx, cy) r [SAttr.fill "url(#spherical-gradient)"]
       ]
 
 drawTargetBound : Float -> Float -> Float -> Float -> Svg Msg
@@ -874,7 +874,8 @@ drawBall ball =
       emptyGroup
 
 drawTheBall : (Float, Float) -> Float -> Svg msg
-drawTheBall = drawCirc "ball"
+drawTheBall pos r =
+  drawCircExt "ball" pos r [SAttr.fill "url(#spherical-gradient)"]
 
 drawCannon : Model -> Svg Msg
 drawCannon model =
@@ -899,9 +900,9 @@ drawTheCannon cannon =
       ]
       [ drawBox "barrel" (20, -10) (10, 20)
       , drawBox "barrel" (32, -11) (6, 22)
-      , drawCircPlain (0, 0) 20
+      , drawCirc "cannon-body" (0, 0) 20
       , drawLine "launch-path" (20, 0) (2100, 0)
-      , drawCircExt "power-radius" (0, 0) (powerRadius * 2) [SAttr.style opacityStyle]
+      , drawCircExt "power-radius" (0, 0) (powerRadius * 2) [SAttr.style opacityStyle, SAttr.fill "url(#power-radius-gradient)"]
       , drawPowerGauge cannon.power
       ]
 
