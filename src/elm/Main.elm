@@ -433,8 +433,8 @@ view model =
         , drawFields model
         , drawTarget model
         , drawBarriers model
-        , drawBall model.ball
         , drawCannon model
+        , drawBall model.ball
         , drawTransition model
         , drawSplashBouncers model
         ]
@@ -915,7 +915,7 @@ drawPowerGauge power =
       Svg.g
         [ SAttr.class "power-gauge"
         ]
-        [ drawCircPlain (-power, 0) 16
+        [ drawCirc "cannon-drawback" (-power, 0) 16
         , drawCirc "gauge-dot-bg" (0, 0) 15
         , drawCirc "gauge-dot-bg" (-power, 0) 15
         , drawLineHoriz "gauge-stretch-bg" (-power, 0) power
