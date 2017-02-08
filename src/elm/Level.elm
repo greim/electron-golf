@@ -90,7 +90,7 @@ beginner =
     (Target (800, 700) 150)
     1
     0
-    (Just (Message "The longer you charge the cannon, the farther the electron travels." (160, 160) 320 R T))
+    (Just (Message "Try this: charge the cannon by holding the SPACEBAR for two seconds and then release. The longer the charge, the faster the release. The electron must come to rest on or near the captive proton." (100, 100) 420 R T))
 
   ----------------------------------------------------------------------------
   -- Training. Opposite-end target. Cannon not perfectly lined up.
@@ -101,7 +101,7 @@ beginner =
     (Target (225, 225) 150)
     1
     0
-    (Just (Message "While aiming, press SHIFT or ALT to modify rotation speed." (150, 150) 320 L B))
+    (Just (Message "Aim the cannon by pressing the LEFT or RIGHT arrow keys. While aiming, hold SHIFT or ALT to modify rotation speed." (150, 150) 320 L B))
 
   ----------------------------------------------------------------------------
   -- Training. A very introductory level with a big, close target. Helpful
@@ -113,7 +113,7 @@ beginner =
     (Target (275, 275) 150)
     1
     0
-    (Just (Message "At close range, hold SHIFT to putt." (100, 100) 550 L B))
+    (Just (Message "At closer ranges, hold SHIFT to putt." (100, 100) 600 L B))
 
   ----------------------------------------------------------------------------
   -- In which we introduce the first barrier. Simple bank shot.
@@ -138,7 +138,7 @@ beginner =
     (Target (500, 850) 100)
     2
     0
-    (Just (Message "Like repels like. Opposites attract. Electrical fields either attract or repel, depending on their charge." (100, 100) 330 R T))
+    (Just (Message "Like repels like. Opposites attract. An electrical field will either attract or repel your electron, depending on its charge." (100, 100) 310 R T))
 
   ----------------------------------------------------------------------------
   -- A trick level. Player presumably hasn't seen bouncy barriers yet so
