@@ -90,18 +90,18 @@ beginner =
     (Target (800, 700) 150)
     1
     0
-    (Just (Message "Timing is everything. The longer you charge the cannon, the faster the electron travels." (160, 160) 320 L B))
+    (Just (Message "The longer you charge the cannon, the farther the electron travels." (160, 160) 320 R T))
 
   ----------------------------------------------------------------------------
   -- Training. Opposite-end target. Cannon not perfectly lined up.
   , Level
-    (Cannon (800, 800) 234.6 0)
+    (Cannon (800, 800) 277 0)
     []
     []
     (Target (225, 225) 150)
     1
     0
-    (Just (Message "While aiming, don't forget to press SHIFT or ALT to modify the rotation speed." (150, 150) 320 R T))
+    (Just (Message "While aiming, press SHIFT or ALT to modify rotation speed." (150, 150) 320 L B))
 
   ----------------------------------------------------------------------------
   -- Training. A very introductory level with a big, close target. Helpful
@@ -113,7 +113,7 @@ beginner =
     (Target (275, 275) 150)
     1
     0
-    (Just (Message "It's a little touchy at close range. Best to do a putt." (100, 100) 400 L B))
+    (Just (Message "At close range, hold SHIFT to putt." (100, 100) 550 L B))
 
   ----------------------------------------------------------------------------
   -- In which we introduce the first barrier. Simple bank shot.
@@ -138,7 +138,7 @@ beginner =
     (Target (500, 850) 100)
     2
     0
-    (Just (Message "Electrons have a negative charge. Like repels like, while opposites attract. Electrical fields will either attract or repel your electron, depending on their charge." (100, 100) 330 R T))
+    (Just (Message "Like repels like. Opposites attract. Electrical fields either attract or repel, depending on their charge." (100, 100) 330 R T))
 
   ----------------------------------------------------------------------------
   -- A trick level. Player presumably hasn't seen bouncy barriers yet so
@@ -153,9 +153,9 @@ beginner =
     ]
     []
     (Target (500, 150) 100)
-    3
+    2
     0
-    (Just (Message "Just go for it." (100, 200) 450 R B))
+    (Just (Message "Meanwhile, in Japan..." (100, 200) 450 R B))
 
   ----------------------------------------------------------------------------
   -- Start from the center and try to bounce the ball into a narrow channel.
@@ -198,7 +198,7 @@ beginner =
     ]
     []
     (Target (587.5, 137.5) 75)
-    2
+    1
     0
     Nothing
 
@@ -340,15 +340,15 @@ advanced =
   [
 
   ----------------------------------------------------------------------------
-  -- A fun arrangement of a bubble barrier and an attractive field.
+  -- Another double bank shot.
   Level
-    (Cannon (100, 900) 315 0)
-    [ Phys.bubbleBarrier 330 330 200
+    (Cannon (500, 800) 270 0)
+    [ Phys.horizBarrier 200 333 600
+    , Phys.horizBarrier 200 666 600
     ]
-    [ Phys.Field (650, 650) 120 240 3
-    ]
-    (Target (850, 150) 100)
-    1
+    []
+    (Target (500, 190) 100)
+    2
     0
     Nothing
 
@@ -380,15 +380,15 @@ advanced =
     Nothing
 
   ----------------------------------------------------------------------------
-  -- Another double bank shot.
+  -- A fun arrangement of a bubble barrier and an attractive field.
   , Level
-    (Cannon (500, 800) 270 0)
-    [ Phys.horizBarrier 200 333 600
-    , Phys.horizBarrier 200 666 600
+    (Cannon (100, 900) 315 0)
+    [ Phys.bubbleBarrier 330 330 200
     ]
-    []
-    (Target (500, 190) 100)
-    2
+    [ Phys.Field (650, 650) 120 240 3
+    ]
+    (Target (850, 150) 100)
+    1
     0
     Nothing
 
@@ -406,20 +406,6 @@ advanced =
     []
     (Target (850, 500) 100)
     3
-    0
-    Nothing
-
-  ----------------------------------------------------------------------------
-  -- Kind of a PITA: you have to shoot straight up and hopefully deflect out
-  -- sideways so that you can take the second shot at the target.
-  , Level
-    (Cannon (900, 900) 270 0)
-    [ Phys.vertBarrier 850 230 720
-    , Phys.bubbleBarrier 900 100 25
-    ]
-    []
-    (Target (740, 850) 100)
-    2
     0
     Nothing
 
@@ -452,6 +438,21 @@ advanced =
     []
     (Target (500, 500) 100)
     3
+    0
+    Nothing
+
+  ----------------------------------------------------------------------------
+  -- Place the target between four attractive force fields.
+  , Level
+    (Cannon (100, 333) 10.3 0)
+    []
+    [ Phys.Field (333, 333) 70 163 2
+    , Phys.Field (666, 333) 70 163 2
+    , Phys.Field (666, 666) 70 163 2
+    , Phys.Field (333, 666) 70 163 2
+    ]
+    (Target (500, 500) 75)
+    2
     0
     Nothing
 

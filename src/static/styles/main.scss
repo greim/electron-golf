@@ -23,10 +23,10 @@ body {
     font-weight: 100;
     position: fixed;
     text-align: left;
-    color: #555;
+    color: #444;
     margin: 0;
     padding: 1em;
-    font-size: 2vh;
+    font-size: 1.5em;
     text-align: center;
     line-height: 1;
     width: 100vh;
@@ -208,9 +208,16 @@ text.par-label {
 }
 
 .barrier {
-  fill: rgba(255,255,255,0.025);
+  stroke-width: 2px;
   stroke: #f90;
-  stroke-width: 1px;
+  fill: rgba(255,255,255,0.05);
+  opacity: .75;
+}
+.barrier-inner {
+  stroke: #111;
+  stroke-width: 0;
+  fill: transparent;
+  fill: rgba(0,0,0,0.25);
 }
 
 .cannon {
@@ -257,7 +264,7 @@ text.par-label {
       stroke: #0f0;
       stroke-width: 8px;
       opacity: .75;
-      stroke-dasharray: 2, 2;
+      stroke-dasharray: 4, 4;
     }
   }
 }
