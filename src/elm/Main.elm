@@ -138,7 +138,7 @@ update msg model =
                         Just time -> Just (Phys.ball (2000, 2000) cannon.angle 1)
                         Nothing -> Just (Phys.ball cannon.pos cannon.angle adjustedPower)
                       newCannon = { cannon | power = 0 }
-                      newLevel = { level | cannon = newCannon }
+                      newLevel = { level | cannon = newCannon, score = level.score + 1 }
                       modelInMotion = { newModel | ball = newBall, phase = Playing newLevel }
                     in
                       (modelInMotion, Cmd.none)
@@ -202,12 +202,10 @@ evaluatePlay : Phys.Obj -> Level -> Model -> Model
 evaluatePlay ball level model =
   if ballIsInTarget ball level.target then
     let
-      finishedLevel = { level | score = level.score + 1 }
-      newFinishedLevels = finishedLevel :: model.finishedLevels
+      newFinishedLevels = level :: model.finishedLevels
       actionPoint = ball.pos
-      parDiff = finishedLevel.score - finishedLevel.par
+      parDiff = level.score - level.par
       message = if parDiff < 0 then toString parDiff
-        --else if parDiff == 0 then "par!"
         else "+" ++ (toString parDiff)
       trans = Transition.successful message ball.pos
     in
@@ -225,9 +223,7 @@ evaluatePlay ball level model =
       fudge = toFloat (((round model.time) % 120) - 60)
       angle = (atan2 (y2 - y1) (x2 - x1)) * (360 / (pi * 2))
       newCannon = { cannon | pos = ball.pos, angle = angle + fudge }
-      -- increment score
-      newScore = level.score + 1
-      newLevel = { level | cannon = newCannon, score = newScore }
+      newLevel = { level | cannon = newCannon }
     in
       { model | ball = Nothing, phase = Playing newLevel }
 
@@ -687,7 +683,6 @@ drawEndSplash model (attempts, levelPar) (currentLevel, levelCount) (totalScore,
             , Html.p []
               [ Html.text parFollowup
               ]
-            , Html.hr [] []
             , drawCourseOptions
             , blurb
             ]
