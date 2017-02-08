@@ -55,9 +55,10 @@ basicCannon =
 cannonPower : Float -> Svg msg
 cannonPower power =
   let
-    powerRadius = (power * 2.7) ^ 1.2
+    powerRadius = (power * 2.6) ^ 1.2
     powerOpac = (min 1.0 (1.0 - (powerRadius / 1000))) * 0.2
     opacStyle = "opacity:" ++ (toString powerOpac)
+    strokeWidth = (toString (powerRadius / 30))
   in
     case power of
       0 ->
@@ -67,7 +68,7 @@ cannonPower power =
           [ Attr.class "power-gauge"
           ]
           [ circ "cannon-drawback" (-power, 0) 16
-          , circExt "power-radius" (0, 0) (powerRadius * 2) [Attr.style opacStyle, Attr.fill "url(#power-radius-gradient)"]
+          , circExt "power-radius" (0, 0) (powerRadius) [Attr.style opacStyle, Attr.strokeWidth strokeWidth]
           , circ "gauge-dot-bg" (0, 0) 15
           , circ "gauge-dot-bg" (-power, 0) 15
           , lineHoriz "gauge-stretch-bg" (-power, 0) power
