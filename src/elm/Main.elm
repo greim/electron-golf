@@ -144,7 +144,7 @@ update msg model =
                 (newModel, Cmd.none)
           85 ->
             let
-              revertModel = { newModel | phase = Starting Phys.splashBouncers Cannon.practice }
+              revertModel = { newModel | phase = Starting Phys.splashBouncers Cannon.practice, ball = Nothing }
             in
               (revertModel, Cmd.none)
           _ ->
