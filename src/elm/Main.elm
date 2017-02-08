@@ -134,7 +134,9 @@ update msg model =
                     let
                       cannon = level.cannon
                       adjustedPower = cannon.power / 10
-                      newBall = Just (Phys.ball cannon.pos cannon.angle adjustedPower)
+                      newBall = case model.keysPressed.alt of
+                        Just time -> Just (Phys.ball (2000, 2000) cannon.angle 1)
+                        Nothing -> Just (Phys.ball cannon.pos cannon.angle adjustedPower)
                       newCannon = { cannon | power = 0 }
                       newLevel = { level | cannon = newCannon }
                       modelInMotion = { newModel | ball = newBall, phase = Playing newLevel }
@@ -490,7 +492,7 @@ drawField field =
   let
     (x, y) = field.pos
     tPosX = x
-    tPosY = y - (field.outerRadius + 10)
+    tPosY = y - (field.outerRadius - 50)
     charge = if field.strength < 0 then
       toString field.strength
     else
@@ -851,7 +853,16 @@ drawBarrier : Phys.Obj -> Svg Msg
 drawBarrier barrier =
   case barrier.shape of
     Bodies.Bubble r ->
-      drawCirc "barrier" barrier.pos r
+      let
+        circ = drawCirc "barrier" barrier.pos r
+      in
+        if barrier.inverseMass /= 0 then
+          group
+            [ circ
+            , drawCirc "barrier-inner" barrier.pos (r * 0.8)
+            ]
+        else
+          circ
     Bodies.Box (halfWidth, halfHeight) ->
       let
         (cx, cy) = barrier.pos
