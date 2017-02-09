@@ -1,7 +1,7 @@
 {
     "version": "1.0.0",
     "summary": "golf",
-    "repository": "https://github.com/greim/golf.git",
+    "repository": "https://github.com/greim/electron-golf.git",
     "license": "NO LICENSE",
     "source-directories": [
         "src/elm"
