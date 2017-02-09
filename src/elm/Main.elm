@@ -27,6 +27,7 @@ import View exposing (..)
 import Ease
 import Layout exposing (Layout)
 import Gfx
+import Util
 
 -- main ------------------------------------------------------------------------
 
@@ -50,6 +51,8 @@ type alias Model =
   , time : Time
   , remainingLevels : List Level
   , finishedLevels : List Level
+  , courseName : Maybe String
+  , resetCount : Int
   }
 
 init : (Model, Cmd Msg)
@@ -62,7 +65,20 @@ init =
     time = 0
     remainingLevels = []
     finishedLevels = []
-    model = Model playport phase keysPressed ball time remainingLevels finishedLevels
+    courseName = Nothing
+    resetCount = 0
+    -------------------------------
+    model = Model
+      playport
+      phase
+      keysPressed
+      ball
+      time
+      remainingLevels
+      finishedLevels
+      courseName
+      resetCount
+    -------------------------------
     cmd = Task.perform Resize Window.size
   in
     (model, cmd)
@@ -98,6 +114,8 @@ update msg model =
                   , finishedLevels = []
                   , phase = Playing level
                   , ball = Nothing
+                  , courseName = Just key
+                  , resetCount = 0
                   }
               in
                 (newModel, Cmd.none)
@@ -146,9 +164,10 @@ update msg model =
                 (newModel, Cmd.none)
           85 ->
             let
-              revertModel = { newModel | phase = Starting Phys.splashBouncers Cannon.practice, ball = Nothing }
+              isWholeGame = model.keysPressed.shift /= Nothing
+              resetModel = reset isWholeGame newModel
             in
-              (revertModel, Cmd.none)
+              (resetModel, Cmd.none)
           _ ->
             (newModel, Cmd.none)
 
@@ -185,6 +204,37 @@ update msg model =
               newModel = { tickModel | phase = newPhase }
             in
               (newModel, Cmd.none)
+
+reset : Bool -> Model -> Model
+reset isWholeGame model =
+  if isWholeGame then
+    { model
+    | phase = Starting Phys.splashBouncers Cannon.practice
+    , ball = Nothing
+    , courseName = Nothing
+    , resetCount = 0
+    }
+  else
+    case model.courseName of
+      Just name ->
+        case Dict.get name Level.courses of
+          Just redoCourses ->
+            let
+              idx = List.length model.finishedLevels
+            in
+              case Util.getByIndex idx redoCourses of
+                Just redoLevel ->
+                  { model
+                  | phase = Playing redoLevel
+                  , ball = Nothing
+                  , resetCount = model.resetCount + 1
+                  }
+                Nothing ->
+                  model
+          Nothing ->
+            model
+      Nothing ->
+        model
 
 advanceTransition : Transition -> Model -> Model
 advanceTransition transition model =
@@ -256,7 +306,7 @@ advanceBall level model =
           evaluatePlay ball newLevel model
         else if isOOB then
           let
-            endedLevel = { level | score = level.score + 6 }
+            endedLevel = { level | score = level.score + 5 }
             newFinishedLevels = endedLevel :: model.finishedLevels
             trans = Transition.unsuccessful "Tunneled Out! +6" ball.pos
             newPhase = Transitioning trans
@@ -517,7 +567,7 @@ help =
     [ labeledSlashVal "Aim" "L" "R"
     , labeledVal "Drive" "SPC -> Release"
     , labeledVal "Putt" "SHIFT + SPC"
-    , labeledVal "Reset" "U"
+    , labeledVal "Reset" "u/U"
     ]
 
 drawTallies : Model -> (Int, Int) -> (Int, Int) -> (Int, Int, Int) -> Html Msg
@@ -642,6 +692,7 @@ drawEndSplash model (attempts, levelPar) (currentLevel, levelCount) (totalScore,
     Ending bouncers ->
       let
         absParCompare = abs parCompare
+        asterisk = if model.resetCount > 0 then "*" else ""
         message = if parCompare <= -3 then "Fantastic!"
           else if parCompare <= -2 then "Terrific!"
           else if parCompare <= -1 then "Nicely Done!"
@@ -656,7 +707,7 @@ drawEndSplash model (attempts, levelPar) (currentLevel, levelCount) (totalScore,
           else if parCompare == -1 then "Hats off to you."
           else if parCompare == 0 then "Solid game."
           else if parCompare == 1 then "That seems respectable."
-          else if parCompare <= 3 then "That's not bad for a beginner."
+          else if parCompare <= 3 then "Not too bad for a beginner."
           else if parCompare <= 6 then "You need to work on your foo."
           else if parCompare <= 10 then "...and you call yourself a scientist."
           else "Hint: lower scores are better."
@@ -666,7 +717,7 @@ drawEndSplash model (attempts, levelPar) (currentLevel, levelCount) (totalScore,
           , HAttr.class "end-splash"
           ]
           [ Html.div [HAttr.id "splash-inner"]
-            [ Html.h1 [] [Html.text message]
+            [ Html.h1 [] [Html.text (message ++ asterisk)]
             , Html.p []
               [ Html.text "You cleared "
               , Html.strong [ HAttr.class "value" ] [ Html.text (toString levelCount) ]

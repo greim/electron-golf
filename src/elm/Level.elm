@@ -80,33 +80,29 @@ fudgeLevel fudge level =
 beginner : Course
 beginner =
   [
-
-  ----------------------------------------------------------------------------
-  -- Training. Super easy setup.
   Level
+    -- Training. Super easy setup.
     (Cannon (200, 300) 34 0)
     []
     []
     (Target (800, 700) 150)
     1
     0
-    (Just (Message "Try this: charge the cannon by holding the SPACEBAR for two seconds and then release. The longer the charge, the faster the release. The electron must come to rest on or near the captive proton." (100, 100) 420 R T))
-
-  ----------------------------------------------------------------------------
-  -- Training. Opposite-end target. Cannon not perfectly lined up.
-  , Level
+    (Just (Message "Charge the cannon by holding the SPACEBAR, then release to fire. The longer the charge, the faster the launch. Make the electron come to rest on or near the captive proton." (100, 100) 420 R T))
+  ,
+  Level
+    -- Training. Opposite-end target. Cannon not perfectly lined up.
     (Cannon (800, 800) 277 0)
     []
     []
     (Target (225, 225) 150)
     1
     0
-    (Just (Message "Aim the cannon by pressing the LEFT or RIGHT arrow keys. While aiming, hold SHIFT or ALT to modify rotation speed." (150, 150) 320 L B))
-
-  ----------------------------------------------------------------------------
-  -- Training. A very introductory level with a big, close target. Helpful
-  -- message.
-  , Level
+    (Just (Message "Aim the cannon using the LEFT or RIGHT arrow keys. While aiming, hold SHIFT or ALT to modify rotation speed." (150, 150) 320 L B))
+  ,
+  Level
+    -- Training. A very introductory level with a big, close target. Helpful
+    -- message.
     (Cannon (100, 100) 10 0)
     []
     []
@@ -114,10 +110,9 @@ beginner =
     1
     0
     (Just (Message "At closer ranges, hold SHIFT to putt." (100, 100) 600 L B))
-
-  ----------------------------------------------------------------------------
-  -- In which we introduce the first barrier. Simple bank shot.
-  , Level
+  ,
+  Level
+    -- In which we introduce the first barrier. Simple bank shot.
     (Cannon (100, 100) 50 0)
     [ Phys.vertBarrier 500 50 600
     ]
@@ -126,11 +121,10 @@ beginner =
     2
     0
     (Just (Message "Circumvent barriers with bank shots." (100, 100) 250 L B))
-
-  ----------------------------------------------------------------------------
-  -- Introduce a simple force field the player must work around. No other
-  -- obstacles.
-  , Level
+  ,
+  Level
+    -- Introduce a simple force field the player must work around. No other
+    -- obstacles.
     (Cannon (500, 100) 90 0)
     []
     [ Phys.Field (370, 500) 50 200 -1
@@ -139,12 +133,24 @@ beginner =
     2
     0
     (Just (Message "Like repels like. Opposites attract. An electrical field will either attract or repel your electron, depending on its charge." (100, 100) 310 R T))
-
-  ----------------------------------------------------------------------------
-  -- A trick level. Player presumably hasn't seen bouncy barriers yet so
-  -- thinks this level is impossible, since no openings to target are visible.
-  -- Little do they know that some barriers move.
-  , Level
+  ,
+  Level
+    -- Start from the center and try to bounce the ball into a narrow channel.
+    (Cannon (800, 200) 104 0)
+    [ Phys.bubbleBarrier 350 650 200
+    , Phys.bubbleBarrier 750 450 115
+    , Phys.bubbleBarrier 530 200 80
+    ]
+    []
+    (Target (650, 800) 120)
+    2
+    0
+    (Just (Message "Some barriers are round. Deflection angles are tricky to estimate." (100, 200) 280 L T))
+  ,
+  Level
+    -- A trick level. Player presumably hasn't seen bouncy barriers yet so
+    -- thinks this level is impossible, since no openings to target are visible.
+    -- Little do they know that some barriers move.
     (Cannon (500, 900) 270 0)
     [ Phys.horizBarrier 51 400 222
     , Phys.bouncyBarrier 387 400 111 0.01
@@ -156,22 +162,9 @@ beginner =
     2
     0
     (Just (Message "Meanwhile, in Japan..." (100, 200) 450 R B))
-
-  ----------------------------------------------------------------------------
-  -- Start from the center and try to bounce the ball into a narrow channel.
-  , Level
-    (Cannon (100, 100) 45 0)
-    [ Phys.vertBarrier 775 51 800
-    ]
-    []
-    (Target (862.5, 137.5) 75)
-    2
-    0
-    Nothing
-
-  ----------------------------------------------------------------------------
-  -- Breeze through a channel of super-lightweight barriers.
-  , Level
+  ,
+  Level
+    -- Breeze through a channel of super-lightweight barriers.
     (Cannon (900, 500) 180 0)
     [ Phys.bouncyBarrier (300 + (140 * 0)) (500 + 80) 60 0.03
     , Phys.bouncyBarrier (300 + (140 * 1)) (500 + 80) 60 0.03
@@ -187,11 +180,10 @@ beginner =
     1
     0
     Nothing
-
-  ----------------------------------------------------------------------------
-  -- Try to bounce 90deg off a stationary barrier in order to land the ball on
-  -- the target.
-  , Level
+  ,
+  Level
+    -- Try to bounce 90deg off a stationary barrier in order to land the ball on
+    -- the target.
     (Cannon (100, 550) 14 0)
     [ Phys.bubbleBarrier 700 700 200
     , Phys.vertBarrier 500 51 450
@@ -207,10 +199,8 @@ beginner =
 intermediate : Course
 intermediate =
   [
-
-  ----------------------------------------------------------------------------
-  -- Place the target in the middle of a repellant force field.
   Level
+    -- Place the target in the middle of a repellant force field.
     (Cannon (100, 900) 325 0)
     []
     [ Phys.Field (500, 500) 80 240 -1
@@ -219,26 +209,21 @@ intermediate =
     1
     0
     Nothing
-
-  ----------------------------------------------------------------------------
-  -- Shallow-angle aperture. Maybe bounce off nearby sphere?
-  , Level
-    (Cannon (880, 450) 202 0)
-    [ Phys.horizBarrier 50 500 349
-    , Phys.horizBarrier 601 500 349
-    , Phys.bubbleBarrier 410 500 10
-    , Phys.bubbleBarrier 590 500 10
-    , Phys.bubbleBarrier 500 200 100
+  ,
+  Level
+    -- Shallow-angle aperture. Maybe bounce off nearby sphere?
+    (Cannon (870, 420) 150 0)
+    [ Phys.horizBarrier 51 500 340
+    , Phys.horizBarrier (1000 - (340 + 51)) 500 340
     ]
     []
-    (Target (850, 850) 100)
-    2
+    (Target (130, 580) 100)
+    1
     0
     Nothing
-
-  ----------------------------------------------------------------------------
-  -- Double bank shot.
-  , Level
+  ,
+  Level
+    -- Double bank shot.
     (Cannon (880, 850) 244.7 0)
     [ Phys.vertBarrier 333 51 666
     , Phys.vertBarrier 666 332 618
@@ -248,10 +233,9 @@ intermediate =
     2
     0
     Nothing
-
-  ----------------------------------------------------------------------------
-  -- An attractive force field. You can skirt the field by banking off the top.
-  , Level
+  ,
+  Level
+    -- An attractive force field. You can skirt the field by banking off the top.
     (Cannon (900, 150) 170 0)
     []
     [ Phys.Field (500, 500) 200 417 1
@@ -260,11 +244,10 @@ intermediate =
     1
     0
     Nothing
-
-  ----------------------------------------------------------------------------
-  -- One big stationary spherical barrier that takes the whole screen. You
-  -- must navigate around margins.
-  , Level
+  ,
+  Level
+    -- One big stationary spherical barrier that takes the whole screen. You
+    -- must navigate around margins.
     (Cannon (170, 170) 45 0)
     [ Phys.bubbleBarrier 500 500 400
     ]
@@ -273,28 +256,25 @@ intermediate =
     3
     0
     Nothing
-
-  ----------------------------------------------------------------------------
-  -- A difficult course consiting of both lines and stationary spheres.
-  , Level
-    (Cannon (150, 150) 0 0)
-    [ Phys.horizBarrier 500 500 450
-    , Phys.horizBarrier 50 300 450
-    , Phys.horizBarrier 50 700 450
-    , Phys.bubbleBarrier 250 500 125
-    , Phys.bubbleBarrier 750 275 125
-    , Phys.bubbleBarrier 750 725 125
+  ,
+  Level
+    -- PITA 2: Target is behind two 90deg barriers. You must get out of the
+    -- channel first.
+    (Cannon (900, 100) 135 0)
+    [ Phys.horizBarrier 220 200 580
+    , Phys.vertBarrier 800 200 580
+    , Phys.bubbleBarrier 198 200 20
+    , Phys.bubbleBarrier 800 802 20
     ]
     []
-    (Target (150, 850) 100)
-    3
+    (Target (650, 350) 100)
+    2
     0
     Nothing
-
-  ----------------------------------------------------------------------------
-  -- Really annoying level of bouncies that don't cooperate but which is
-  -- actually pretty consistently doable in three moves once you figure it out.
-  , Level
+  ,
+  Level
+    -- Really annoying level of bouncies that don't cooperate but which is
+    -- actually pretty consistently doable in three moves once you figure it out.
     (Cannon (100, 100) 45 0)
     [ Phys.bouncyBarrier 500 500 400 0.01
     , Phys.bouncyBarrier 150 850 60 1.0
@@ -305,11 +285,10 @@ intermediate =
     3
     0
     Nothing
-
-  ----------------------------------------------------------------------------
-  -- Place a bouncy barrier over the target. The player  must try to dislodge
-  -- the barrier in order to score.
-  , Level
+  ,
+  Level
+    -- Place a bouncy barrier over the target. The player  must try to dislodge
+    -- the barrier in order to score.
     (Cannon (900, 100) 135 0)
     [ Phys.bouncyBarrier 500 500 90 0.05
     ]
@@ -318,17 +297,16 @@ intermediate =
     1
     0
     Nothing
-
-  ----------------------------------------------------------------------------
-  -- Try to thread the needle through a narrow gap between two stationary
-  -- spherical barriers. Tricky!
-  , Level
+  ,
+  Level
+    -- Try to thread the needle through a narrow gap between two stationary
+    -- spherical barriers. Tricky!
     (Cannon (500, 150) 90 0)
     [ Phys.bubbleBarrier 379.5 500 100
     , Phys.bubbleBarrier 620.5 500 100
     ]
     []
-    (Target (500, 740) 80)
+    (Target (500, 720) 80)
     2
     0
     Nothing
@@ -338,10 +316,8 @@ intermediate =
 advanced : Course
 advanced =
   [
-
-  ----------------------------------------------------------------------------
-  -- Another double bank shot.
   Level
+    -- Another double bank shot.
     (Cannon (500, 800) 270 0)
     [ Phys.horizBarrier 200 333 600
     , Phys.horizBarrier 200 666 600
@@ -351,11 +327,10 @@ advanced =
     2
     0
     Nothing
-
-  ----------------------------------------------------------------------------
-  -- Ridiculous bouncies to the max. Good one to just pull back and fire with
-  -- full force.
-  , Level
+  ,
+  Level
+    -- Ridiculous bouncies to the max. Good one to just pull back and fire with
+    -- full force.
     (Cannon (100, 900) 315 0)
     [ Phys.bouncyBarrier 150 330 70 0.02
     , Phys.bouncyBarrier 325 330 70 0.02
@@ -378,10 +353,9 @@ advanced =
     2
     0
     Nothing
-
-  ----------------------------------------------------------------------------
-  -- A fun arrangement of a bubble barrier and an attractive field.
-  , Level
+  ,
+  Level
+    -- A fun arrangement of a bubble barrier and an attractive field.
     (Cannon (100, 900) 315 0)
     [ Phys.bubbleBarrier 330 330 200
     ]
@@ -391,11 +365,10 @@ advanced =
     1
     0
     Nothing
-
-  ----------------------------------------------------------------------------
-  -- Five stationary spheres that take up most of the playing field. Hard
-  -- because reflection angles are impossible to predict.
-  , Level
+  ,
+  Level
+    -- Five stationary spheres that take up most of the playing field. Hard
+    -- because reflection angles are impossible to predict.
     (Cannon (100, 500) 0 0)
     [ Phys.bubbleBarrier 500 500 210
     , Phys.bubbleBarrier 250 250 100
@@ -408,26 +381,25 @@ advanced =
     3
     0
     Nothing
-
-  ----------------------------------------------------------------------------
-  -- PITA 2: Target is behind two 90deg barriers. You must get out of the
-  -- channel first.
-  , Level
-    (Cannon (900, 100) 135 0)
-    [ Phys.horizBarrier 220 200 580
-    , Phys.vertBarrier 800 200 580
-    , Phys.bubbleBarrier 198 200 20
-    , Phys.bubbleBarrier 800 802 20
+  ,
+  Level
+    -- A difficult course consiting of both lines and stationary spheres.
+    (Cannon (150, 150) 0 0)
+    [ Phys.horizBarrier 500 500 450
+    , Phys.horizBarrier 50 300 450
+    , Phys.horizBarrier 50 700 450
+    , Phys.bubbleBarrier 250 500 125
+    , Phys.bubbleBarrier 750 275 125
+    , Phys.bubbleBarrier 750 725 125
     ]
     []
-    (Target (650, 350) 100)
+    (Target (150, 850) 100)
     2
     0
     Nothing
-
-  ----------------------------------------------------------------------------
-  -- PITA 3: Target is in a box with opening on wrong side.
-  , Level
+  ,
+  Level
+    -- Target is in a box with opening on wrong side.
     (Cannon (100, 500) 0 0)
     [ Phys.horizBarrier 200 199 600
     , Phys.horizBarrier 200 801 600
@@ -440,11 +412,10 @@ advanced =
     3
     0
     Nothing
-
-  ----------------------------------------------------------------------------
-  -- Place the target between four attractive force fields.
-  , Level
-    (Cannon (100, 333) 10.3 0)
+  ,
+  Level
+    -- Place the target between four attractive force fields.
+    (Cannon (666, 368) 102 0)
     []
     [ Phys.Field (333, 333) 70 163 2
     , Phys.Field (666, 333) 70 163 2
@@ -455,26 +426,24 @@ advanced =
     2
     0
     Nothing
-
-  ----------------------------------------------------------------------------
-  -- PITA 4: Long channel to navigate through.
-  , Level
-    (Cannon (500, 500) 135 0)
+  ,
+  Level
+    -- PITA 4: Long channel to navigate through.
+    (Cannon (500, 500) 119 0)
     [ Phys.horizBarrier 200 199 600
     , Phys.horizBarrier 51 801 750
     , Phys.vertBarrier 800 200 600
-    , Phys.vertBarrier 200 200 200
+    , Phys.vertBarrier 200 200 400
     ]
     []
     (Target (125, 875) 100)
-    3
+    2
     0
     Nothing
-
-  ----------------------------------------------------------------------------
-  -- PITA 5: Lots of horiz barriers between you and target. You must do a mega
-  -- multi-bank shot.
-  , Level
+  ,
+  Level
+    -- PITA 5: Lots of horiz barriers between you and target. You must do a mega
+    -- multi-bank shot.
     (Cannon (500, 100) 90 0)
     [ Phys.horizBarrier 50 250 375
     , Phys.horizBarrier 575 250 375
