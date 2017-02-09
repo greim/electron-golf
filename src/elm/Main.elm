@@ -644,7 +644,7 @@ drawSplash model =
         [ Html.div [HAttr.id "splash-inner"]
           [ Html.h1 [] [Html.text "~ Electron Golf ~"]
           , Html.p []
-            [ Html.text "Fire an electron at the captive proton, bringing the two into proximity, thus forming a neutron. Pay attention to your probability distributions, and beware of high-energy quantum tunneling effects."
+            [ Html.text "Fire your electron cannon at the captive proton, but beware of high-energy quantum tunneling effects!"
             ]
           , drawCourseOptions
           , Html.p []
@@ -661,7 +661,13 @@ drawSplash model =
             ]
           , Html.p []
             [ Html.strong [] [Html.text "Start: "]
-            , Html.text "Press SPACEBAR"
+            , Html.text "Press SPACEBAR."
+            ]
+          , Html.p []
+            [ Html.strong [] [Html.text "Reset: u"]
+            , Html.text " level / "
+            , Html.strong [] [Html.text "U"]
+            , Html.text " game."
             ]
           ]
         ]
@@ -696,8 +702,8 @@ drawEndSplash model (attempts, levelPar) (currentLevel, levelCount) (totalScore,
         message = if parCompare <= -3 then "Fantastic!"
           else if parCompare <= -2 then "Terrific!"
           else if parCompare <= -1 then "Nicely Done!"
-          else if parCompare <= 0 then "Well Done."
-          else "Game Over."
+          else if parCompare <= 0 then "Well Done"
+          else "Game Over"
         parMessage = if parCompare < 0 then Html.span [] [ Html.text "You shot ", val absParCompare, Html.text " under par."]
           else if parCompare == 0 then Html.text "You got par."
           else Html.span [] [ Html.text "You shot ", val absParCompare, Html.text " over par."]
@@ -711,6 +717,8 @@ drawEndSplash model (attempts, levelPar) (currentLevel, levelCount) (totalScore,
           else if parCompare <= 6 then "You need to work on your foo."
           else if parCompare <= 10 then "...and you call yourself a scientist."
           else "Hint: lower scores are better."
+        resetMessage = if model.resetCount > 0 then "* We noticed you pushed the do-over button. ಠ_ಠ"
+        else ""
       in
         Html.div
           [ HAttr.id "splash"
@@ -736,6 +744,9 @@ drawEndSplash model (attempts, levelPar) (currentLevel, levelCount) (totalScore,
               ]
             , drawCourseOptions
             , blurb
+            , Html.p [ HAttr.class "reset-count" ]
+              [ Html.text resetMessage
+              ]
             ]
           ]
     _ ->
