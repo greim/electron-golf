@@ -44,15 +44,15 @@ main =
 -- types/model -----------------------------------------------------------------
 
 type alias Model =
-  { playport : Layout
-  , phase : Phase
-  , keysPressed : KeysPressed
-  , ball : Maybe Phys.Obj
-  , time : Time
-  , remainingLevels : List Level
-  , finishedLevels : List Level
-  , courseName : Maybe String
-  , resetCount : Int
+  { playport : Layout -- like "viewport" into which we'll draw our game
+  , phase : Phase -- ADT for starting, playing, transitioning, etc
+  , keysPressed : KeysPressed -- knows which keys are currently pressed
+  , ball : Maybe Phys.Obj -- is there a ball in play?
+  , time : Time -- how old is the model?
+  , remainingLevels : List Level -- levels yet to be completed
+  , finishedLevels : List Level -- levels that have been finished
+  , courseName : Maybe String -- name of course currently playing
+  , resetCount : Int -- how many times user has pressed reset button
   }
 
 init : (Model, Cmd Msg)
@@ -87,8 +87,7 @@ init =
 -- update ----------------------------------------------------------------------
 
 type Msg
-  = NoOp
-  | Resize Window.Size
+  = Resize Window.Size
   | KeyDown Keyboard.KeyCode
   | KeyUp Keyboard.KeyCode
   | Frame Time
@@ -97,9 +96,6 @@ type Msg
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
   case msg of
-
-    NoOp ->
-      (model, Cmd.none)
 
     Start key ->
       case Dict.get key Level.courses of
