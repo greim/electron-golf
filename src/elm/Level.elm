@@ -201,20 +201,20 @@ intermediate =
   [
   Level
     -- Place the target in the middle of a repellant force field.
-    (Cannon (100, 900) 325 0)
+    (Cannon (100, 900) 315 0)
     []
-    [ Phys.Field (500, 500) 80 240 -1
+    [ Phys.Field (500, 500) 85 240 -6
     ]
     (Target (500.5, 500.5) 75)
     1
     0
-    Nothing
+    (Just (Message "Note of the strength of the field's charge." (100, 100) 800 L T))
   ,
   Level
     -- Shallow-angle aperture. Maybe bounce off nearby sphere?
     (Cannon (870, 420) 150 0)
     [ Phys.horizBarrier 51 500 340
-    , Phys.horizBarrier (1000 - (340 + 51)) 500 340
+    , Phys.horizBarrier (1000 - (344 + 51)) 500 340
     ]
     []
     (Target (130, 580) 100)
