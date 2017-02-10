@@ -235,7 +235,8 @@ intermediate =
     Nothing
   ,
   Level
-    -- An attractive force field. You can skirt the field by banking off the top.
+    -- An attractive force field. You can skirt the field by banking off the top
+    -- boundary.
     (Cannon (900, 150) 170 0)
     []
     [ Phys.Field (500, 500) 200 417 1
