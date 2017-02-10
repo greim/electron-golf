@@ -97,8 +97,8 @@ update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
   case msg of
 
-    Start key ->
-      case Dict.get key Level.courses of
+    Start courseName ->
+      case Dict.get courseName Level.courses of
         Nothing ->
           (model, Cmd.none)
         Just levels ->
@@ -110,7 +110,7 @@ update msg model =
                   , finishedLevels = []
                   , phase = Playing level
                   , ball = Nothing
-                  , courseName = Just key
+                  , courseName = Just courseName
                   , resetCount = 0
                   }
               in
