@@ -1,4 +1,3 @@
-
 -- import ----------------------------------------------------------------------
 
 --import Debug exposing (log)
@@ -9,6 +8,7 @@ import Html.Attributes as HAttr
 import Svg exposing (Svg)
 import Svg.Attributes as SAttr
 import Svg.Lazy exposing (lazy)
+import PageVisibility exposing (visibilityChanges, Visibility(Visible, Hidden))
 import Window
 import Task
 import Process
@@ -44,15 +44,15 @@ main =
 -- types/model -----------------------------------------------------------------
 
 type alias Model =
-  { playport : Layout
-  , phase : Phase
-  , keysPressed : KeysPressed
-  , ball : Maybe Phys.Obj
-  , time : Time
-  , remainingLevels : List Level
-  , finishedLevels : List Level
-  , courseName : Maybe String
-  , resetCount : Int
+  { playport : Layout -- like "viewport" into which we'll draw our game
+  , phase : Phase -- ADT for starting, playing, transitioning, etc
+  , keysPressed : KeysPressed -- knows which keys are currently pressed
+  , ball : Maybe Phys.Obj -- is there a ball in play?
+  , time : Time -- how old is the model?
+  , remainingLevels : List Level -- levels yet to be completed
+  , finishedLevels : List Level -- levels that have been finished
+  , courseName : Maybe String -- name of course currently playing
+  , resetCount : Int -- how many times user has pressed reset button
   }
 
 init : (Model, Cmd Msg)
@@ -87,8 +87,8 @@ init =
 -- update ----------------------------------------------------------------------
 
 type Msg
-  = NoOp
-  | Resize Window.Size
+  = Resize Window.Size
+  | Viz Visibility
   | KeyDown Keyboard.KeyCode
   | KeyUp Keyboard.KeyCode
   | Frame Time
@@ -97,156 +97,262 @@ type Msg
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
   case msg of
+    Viz visibility -> viz visibility model
+    Resize newViewport -> resize newViewport model
+    Start courseName -> start courseName model
+    KeyDown keyCode -> keyDown keyCode model
+    KeyUp keyCode -> keyUp keyCode model
+    Frame time -> frame time model
 
-    NoOp ->
+-- update main functions -------------------------------------------------------
+
+viz : Visibility -> Model -> (Model, Cmd Msg)
+viz visibility model =
+  ({ model | keysPressed = KeysPressed.init }, Cmd.none)
+
+resize : Window.Size -> Model -> (Model, Cmd Msg)
+resize newViewport model =
+  let
+    newPlayport = Layout.from newViewport
+    newModel = { model | playport = newPlayport }
+  in
+    (newModel, Cmd.none)
+
+start : String -> Model -> (Model, Cmd Msg)
+start courseName model =
+  case Dict.get courseName Level.courses of
+    Nothing -> -- this would be a bug
       (model, Cmd.none)
-
-    Start key ->
-      case Dict.get key Level.courses of
-        Nothing ->
+    Just levels ->
+      case levels of
+        [] -> -- this would be a bug
           (model, Cmd.none)
-        Just levels ->
-          case levels of
-            level :: remainingLevels ->
-              let
-                newModel = { model
-                  | remainingLevels = remainingLevels
-                  , finishedLevels = []
-                  , phase = Playing level
-                  , ball = Nothing
-                  , courseName = Just key
-                  , resetCount = 0
-                  }
-              in
-                (newModel, Cmd.none)
-            [] ->
-              (model, Cmd.none)
-
-    Resize newViewport ->
-      let
-        newPlayport = Layout.from newViewport
-        newModel = { model | playport = newPlayport }
-      in
-        (newModel, Cmd.none)
-
-    KeyDown keyCode ->
-      let
-        newKeysPressed = keysPressedOn keyCode model.time model.keysPressed
-        newModel = { model | keysPressed = newKeysPressed }
-      in
-        (newModel, Cmd.none)
-
-    KeyUp keyCode ->
-      let
-        newKeysPressed = keysPressedOff keyCode model.time model.keysPressed
-        newModel = { model | keysPressed = newKeysPressed }
-      in
-        case keyCode of
-          32 ->
-            case model.phase of
-              Playing level ->
-                case model.ball of
-                  Just ball ->
-                    (newModel, Cmd.none)
-                  Nothing ->
-                    let
-                      cannon = level.cannon
-                      adjustedPower = cannon.power / 10
-                      newBall = case model.keysPressed.alt of
-                        Just time -> Just (Phys.ball (2000, 2000) cannon.angle 1)
-                        Nothing -> Just (Phys.ball cannon.pos cannon.angle adjustedPower)
-                      newCannon = { cannon | power = 0 }
-                      newLevel = { level | cannon = newCannon, score = level.score + 1 }
-                      modelInMotion = { newModel | ball = newBall, phase = Playing newLevel }
-                    in
-                      (modelInMotion, Cmd.none)
-              _ ->
-                (newModel, Cmd.none)
-          85 ->
-            let
-              isWholeGame = model.keysPressed.shift /= Nothing
-              resetModel = reset isWholeGame newModel
-            in
-              (resetModel, Cmd.none)
-          _ ->
+        level :: remainingLevels ->
+          let
+            newModel = { model
+              | remainingLevels = remainingLevels
+              , finishedLevels = []
+              , phase = Playing level
+              , ball = Nothing
+              , courseName = Just courseName
+              , resetCount = 0
+              }
+          in
             (newModel, Cmd.none)
 
-    Frame time ->
-      let
-        tickModel = { model | time = model.time + time }
-      in
-        case model.phase of
-          Starting splashBouncers cannon ->
-            let
-              newSplashBouncers = Phys.stepSplashBouncers splashBouncers
-              newCannon = rotateTheCannon model.time model.keysPressed cannon
-              newPhase = Starting newSplashBouncers newCannon
-              newModel = { tickModel | phase = newPhase }
-            in
-              (newModel, Cmd.none)
-          Playing level ->
-            let
-              newModel = tickModel
-                |> rotateCannon level
-                |> chargeCannon level
-                |> advanceBall level
-            in
-              (newModel, Cmd.none)
-          Transitioning trans ->
-            let
-              newModel = advanceTransition trans tickModel
-            in
-              (newModel, Cmd.none)
-          Ending splashBouncers ->
-            let
-              newSplashBouncers = Phys.stepSplashBouncers splashBouncers
-              newPhase = Ending newSplashBouncers
-              newModel = { tickModel | phase = newPhase }
-            in
-              (newModel, Cmd.none)
+keyDown : Int -> Model -> (Model, Cmd Msg)
+keyDown keyCode model =
+  let
+    newKeysPressed = keysPressedOn keyCode model.time model.keysPressed
+    keyedModel = { model | keysPressed = newKeysPressed }
+  in
+    (keyedModel, Cmd.none)
 
-reset : Bool -> Model -> Model
-reset isWholeGame model =
-  if isWholeGame then
-    { model
-    | phase = Starting Phys.splashBouncers Cannon.practice
-    , ball = Nothing
-    , courseName = Nothing
-    , resetCount = 0
-    }
+keyUp : Int -> Model -> (Model, Cmd Msg)
+keyUp keyCode model =
+  let
+    newKeysPressed = keysPressedOff keyCode model.time model.keysPressed
+    keyedModel = { model | keysPressed = newKeysPressed }
+  in
+    case keyCode of
+      32 -> launchBall keyedModel -- spacebar launches ball
+      85 -> reset keyedModel -- 'u' resets level/game
+      _ -> (keyedModel, Cmd.none) -- ignore anything else
+
+frame : Time -> Model -> (Model, Cmd Msg)
+frame time model =
+  let
+    tickModel = { model | time = model.time + time }
+  in
+    case tickModel.phase of
+      Starting splashBouncers cannon -> startingFrame splashBouncers cannon tickModel
+      Playing level -> playingFrame level tickModel
+      Transitioning trans -> transitioningFrame trans tickModel
+      Ending splashBouncers -> endingFrame splashBouncers tickModel
+
+-- update helper functions -----------------------------------------------------
+
+launchBall : Model -> (Model, Cmd Msg)
+launchBall model =
+  case model.phase of
+    Playing level ->
+      case model.ball of
+        Just ball ->
+          (model, Cmd.none)
+        Nothing ->
+          let
+            cannon = level.cannon
+            adjustedPower = cannon.power / 10
+            newBall = Just (Phys.ball cannon.pos cannon.angle adjustedPower)
+            newCannon = { cannon | power = 0 }
+            newLevel = { level | cannon = newCannon, score = level.score + 1 }
+            modelInMotion = { model | ball = newBall, phase = Playing newLevel }
+          in
+            (modelInMotion, Cmd.none)
+    _ ->
+      (model, Cmd.none)
+
+reset : Model -> (Model, Cmd Msg)
+reset model =
+  if model.keysPressed.shift == Nothing then
+    (resetLevel model, Cmd.none)
   else
-    case model.courseName of
-      Just name ->
-        case Dict.get name Level.courses of
-          Just redoCourses ->
-            let
-              idx = List.length model.finishedLevels
-            in
-              case Util.getByIndex idx redoCourses of
-                Just redoLevel ->
-                  { model
-                  | phase = Playing redoLevel
-                  , ball = Nothing
-                  , resetCount = model.resetCount + 1
-                  }
-                Nothing ->
-                  model
-          Nothing ->
-            model
-      Nothing ->
-        model
+    (resetGame model, Cmd.none)
 
-advanceTransition : Transition -> Model -> Model
-advanceTransition transition model =
-  case Transition.step transition of
-    Just tr ->
-      { model | phase = Transitioning tr }
+resetLevel : Model -> Model
+resetLevel model =
+  case model.courseName of
+    Just name ->
+      case Dict.get name Level.courses of
+        Just redoCourses ->
+          let
+            idx = List.length model.finishedLevels
+          in
+            case Util.getByIndex idx redoCourses of
+              Just redoLevel ->
+                { model
+                | phase = Playing redoLevel
+                , ball = Nothing
+                , resetCount = model.resetCount + 1
+                }
+              Nothing ->
+                model
+        Nothing ->
+          model
     Nothing ->
-      case model.remainingLevels of
-        level :: newRemainingLevels ->
-          { model | phase = Playing level, remainingLevels = newRemainingLevels }
-        [] ->
-          { model | phase = Ending Phys.splashBouncers }
+      model
+
+resetGame : Model -> Model
+resetGame model =
+  { model
+  | phase = Starting Phys.splashBouncers Cannon.practice
+  , ball = Nothing
+  , courseName = Nothing
+  , resetCount = 0
+  }
+
+startingFrame : List Phys.Obj -> Cannon -> Model -> (Model, Cmd Msg)
+startingFrame splashBouncers cannon model =
+  let
+    newSplashBouncers = Phys.stepSplashBouncers splashBouncers
+    newCannon = rotateTheCannon model.time model.keysPressed cannon
+    newPhase = Starting newSplashBouncers newCannon
+    newModel = { model | phase = newPhase }
+  in
+    (newModel, Cmd.none)
+
+playingFrame : Level -> Model -> (Model, Cmd Msg)
+playingFrame level model =
+  let
+    newModel = model
+      |> rotateCannon level
+      |> chargeCannon level
+      |> advanceBall level
+  in
+    (newModel, Cmd.none)
+
+transitioningFrame : Transition -> Model -> (Model, Cmd Msg)
+transitioningFrame trans model =
+  let
+    newModel = advanceTransition trans model
+  in
+    (newModel, Cmd.none)
+
+endingFrame : List Phys.Obj -> Model -> (Model, Cmd Msg)
+endingFrame splashBouncers model =
+  let
+    newSplashBouncers = Phys.stepSplashBouncers splashBouncers
+    newPhase = Ending newSplashBouncers
+    newModel = { model | phase = newPhase }
+  in
+    (newModel, Cmd.none)
+
+rotateCannon : Level -> Model -> Model
+rotateCannon level model =
+  let
+    newCannon = rotateTheCannon model.time model.keysPressed level.cannon
+    newLevel = { level | cannon = newCannon }
+  in
+    { model | phase = Playing newLevel }
+
+chargeCannon : Level -> Model -> Model
+chargeCannon level model =
+  case model.ball of
+    Just ball ->
+      model
+    Nothing ->
+      case model.keysPressed.space of
+        Just pressTime ->
+          let
+            pressDuration = model.time - pressTime
+            cannon = level.cannon
+            isFine = not (model.keysPressed.shift == Nothing)
+            incr = pressDuration
+              |> (\d -> (d / 100) + 1)
+              |> logBase e
+              |> (\p -> if isFine then p / 6 else p / 2)
+            newPower = min 500 cannon.power + incr
+            newCannon = { cannon | power = newPower }
+            newLevel = { level | cannon = newCannon }
+          in
+            { model | phase = Playing newLevel }
+        Nothing ->
+          model
+
+advanceBall : Level -> Model -> Model
+advanceBall level model =
+  case model.ball of
+    Just ball ->
+      let
+        (isAtRest, isOOB, newBall, newBarriers) = Phys.step ball level.barriers level.fields
+        newLevel = { level | barriers = newBarriers }
+      in
+        if isAtRest then
+          evaluatePlay ball newLevel model
+        else if isOOB then
+          let
+            endedLevel = { level | score = level.score + 5 }
+            newFinishedLevels = endedLevel :: model.finishedLevels
+            trans = Transition.unsuccessful "Tunneled Out! +6" ball.pos
+            newPhase = Transitioning trans
+          in
+            { model | ball = Nothing, phase = newPhase, finishedLevels = newFinishedLevels }
+        else
+          { model | ball = Just newBall, phase = Playing newLevel }
+    Nothing ->
+      model
+
+rotateTheCannon : Time -> KeysPressed -> Cannon -> Cannon
+rotateTheCannon now keysPressed cannon =
+  let
+    isFine = not (keysPressed.shift == Nothing)
+    isCoarse = not (keysPressed.alt == Nothing)
+  in
+    case (keysPressed.left, keysPressed.right) of
+      (Just pressTime, Nothing) ->
+        rotateCannonBy True isFine isCoarse (now - pressTime) cannon
+      (Nothing, Just pressTime) ->
+        rotateCannonBy False isFine isCoarse (now - pressTime) cannon
+      _ -> cannon
+
+rotateCannonBy : Bool -> Bool -> Bool -> Float -> Cannon -> Cannon
+rotateCannonBy isLeft isFine isCoarse speed cannon =
+  let
+    incr = max 1.0 speed
+      |> logBase e
+      |> (\a -> a * 0.08)
+      |> (\a -> if isFine then a / 6 else a)
+      |> (\a -> if isCoarse then a * 4 else a)
+      |> (\a -> if isLeft then 0 - a else a)
+    incrAngle = cannon.angle - incr
+    newAngle = if incrAngle < 0 then
+      incrAngle + 360
+    else if incrAngle >= 360 then
+      incrAngle - 360
+    else
+      incrAngle
+  in
+    { cannon | angle = newAngle }
 
 evaluatePlay : Phys.Obj -> Level -> Model -> Model
 evaluatePlay ball level model =
@@ -293,93 +399,17 @@ ballIsInTarget ball target =
     Bodies.Box ext ->
       False
 
-advanceBall : Level -> Model -> Model
-advanceBall level model =
-  case model.ball of
-    Just ball ->
-      let
-        (isAtRest, isOOB, newBall, newBarriers) = Phys.step ball level.barriers level.fields
-        newLevel = { level | barriers = newBarriers }
-        maybeNewBall = if isAtRest then Nothing else Just newBall
-      in
-        if isAtRest then
-          evaluatePlay ball newLevel model
-        else if isOOB then
-          let
-            endedLevel = { level | score = level.score + 5 }
-            newFinishedLevels = endedLevel :: model.finishedLevels
-            trans = Transition.unsuccessful "Tunneled Out! +6" ball.pos
-            newPhase = Transitioning trans
-          in
-            { model | ball = Nothing, phase = newPhase, finishedLevels = newFinishedLevels }
-        else
-          { model | ball = Just newBall, phase = Playing newLevel }
+advanceTransition : Transition -> Model -> Model
+advanceTransition transition model =
+  case Transition.step transition of
+    Just tr ->
+      { model | phase = Transitioning tr }
     Nothing ->
-      model
-
-rotateCannon : Level -> Model -> Model
-rotateCannon level model =
-  let
-    newCannon = rotateTheCannon model.time model.keysPressed level.cannon
-    newLevel = { level | cannon = newCannon }
-  in
-    { model | phase = Playing newLevel }
-
-rotateTheCannon : Time -> KeysPressed -> Cannon -> Cannon
-rotateTheCannon now keysPressed cannon =
-  let
-    isFine = not (keysPressed.shift == Nothing)
-    isCoarse = not (keysPressed.alt == Nothing)
-  in
-    case (keysPressed.left, keysPressed.right) of
-      (Just pressTime, Nothing) ->
-        rotateCannonBy True isFine isCoarse (now - pressTime) cannon
-      (Nothing, Just pressTime) ->
-        rotateCannonBy False isFine isCoarse (now - pressTime) cannon
-      _ -> cannon
-
-rotateCannonBy : Bool -> Bool -> Bool -> Float -> Cannon -> Cannon
-rotateCannonBy isLeft isFine isCoarse speed cannon =
-  let
-    incr = max 1.0 speed
-      |> logBase e
-      |> (\a -> a * 0.04)
-      |> (\a -> if isFine then a / 6 else a)
-      |> (\a -> if isCoarse then a * 10 else a)
-      |> (\a -> if isLeft then 0 - a else a)
-    incrAngle = cannon.angle - incr
-    newAngle = if incrAngle < 0 then
-      incrAngle + 360
-    else if incrAngle > 360 then
-      incrAngle - 360
-    else
-      incrAngle
-  in
-    { cannon | angle = newAngle }
-
-chargeCannon : Level -> Model -> Model
-chargeCannon level model =
-  case model.ball of
-    Just ball ->
-      model
-    Nothing ->
-      case model.keysPressed.space of
-        Just pressTime ->
-          let
-            pressDuration = model.time - pressTime
-            cannon = level.cannon
-            isFine = not (model.keysPressed.shift == Nothing)
-            incr = pressDuration
-              |> (\d -> (d / 100) + 1)
-              |> logBase e
-              |> (\p -> if isFine then p / 6 else p / 2)
-            newPower = min 500 cannon.power + incr
-            newCannon = { cannon | power = newPower }
-            newLevel = { level | cannon = newCannon }
-          in
-            { model | phase = Playing newLevel }
-        Nothing ->
-          model
+      case model.remainingLevels of
+        level :: newRemainingLevels ->
+          { model | phase = Playing level, remainingLevels = newRemainingLevels }
+        [] ->
+          { model | phase = Ending Phys.splashBouncers }
 
 delay : Time -> msg -> Cmd msg
 delay time msg =
@@ -428,6 +458,7 @@ subscriptions model =
     , Keyboard.ups KeyUp
     , Window.resizes Resize
     , AnimationFrame.diffs Frame
+    , visibilityChanges Viz
     ]
 
 
