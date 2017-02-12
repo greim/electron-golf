@@ -8,6 +8,7 @@ import Html.Attributes as HAttr
 import Svg exposing (Svg)
 import Svg.Attributes as SAttr
 import Svg.Lazy exposing (lazy)
+import PageVisibility exposing (visibilityChanges, Visibility(Visible, Hidden))
 import Window
 import Task
 import Process
@@ -87,6 +88,7 @@ init =
 
 type Msg
   = Resize Window.Size
+  | Viz Visibility
   | KeyDown Keyboard.KeyCode
   | KeyUp Keyboard.KeyCode
   | Frame Time
@@ -95,13 +97,26 @@ type Msg
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
   case msg of
-    Start courseName -> start courseName model
+    Viz visibility -> viz visibility model
     Resize newViewport -> resize newViewport model
+    Start courseName -> start courseName model
     KeyDown keyCode -> keyDown keyCode model
     KeyUp keyCode -> keyUp keyCode model
     Frame time -> frame time model
 
 -- update main functions -------------------------------------------------------
+
+viz : Visibility -> Model -> (Model, Cmd Msg)
+viz visibility model =
+  ({ model | keysPressed = KeysPressed.init }, Cmd.none)
+
+resize : Window.Size -> Model -> (Model, Cmd Msg)
+resize newViewport model =
+  let
+    newPlayport = Layout.from newViewport
+    newModel = { model | playport = newPlayport }
+  in
+    (newModel, Cmd.none)
 
 start : String -> Model -> (Model, Cmd Msg)
 start courseName model =
@@ -124,14 +139,6 @@ start courseName model =
               }
           in
             (newModel, Cmd.none)
-
-resize : Window.Size -> Model -> (Model, Cmd Msg)
-resize newViewport model =
-  let
-    newPlayport = Layout.from newViewport
-    newModel = { model | playport = newPlayport }
-  in
-    (newModel, Cmd.none)
 
 keyDown : Int -> Model -> (Model, Cmd Msg)
 keyDown keyCode model =
@@ -333,9 +340,9 @@ rotateCannonBy isLeft isFine isCoarse speed cannon =
   let
     incr = max 1.0 speed
       |> logBase e
-      |> (\a -> a * 0.04)
+      |> (\a -> a * 0.08)
       |> (\a -> if isFine then a / 6 else a)
-      |> (\a -> if isCoarse then a * 10 else a)
+      |> (\a -> if isCoarse then a * 4 else a)
       |> (\a -> if isLeft then 0 - a else a)
     incrAngle = cannon.angle - incr
     newAngle = if incrAngle < 0 then
@@ -451,6 +458,7 @@ subscriptions model =
     , Keyboard.ups KeyUp
     , Window.resizes Resize
     , AnimationFrame.diffs Frame
+    , visibilityChanges Viz
     ]
 
 
